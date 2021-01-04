@@ -1,0 +1,22 @@
+# The set of languages for which implicit dependencies are needed:
+set(CMAKE_DEPENDS_LANGUAGES
+  "CXX"
+  )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/bitterboyy/Documents/baub_chess/ChessEngine/BoardRepresentation.cpp" "/home/bitterboyy/Documents/baub_chess/cmake-build-debug/CMakeFiles/baub_chess.dir/ChessEngine/BoardRepresentation.cpp.o"
+  "/home/bitterboyy/Documents/baub_chess/ChessEngine/Engine.cpp" "/home/bitterboyy/Documents/baub_chess/cmake-build-debug/CMakeFiles/baub_chess.dir/ChessEngine/Engine.cpp.o"
+  "/home/bitterboyy/Documents/baub_chess/main.cpp" "/home/bitterboyy/Documents/baub_chess/cmake-build-debug/CMakeFiles/baub_chess.dir/main.cpp.o"
+  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
+
+# The include file search paths:
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
+  )
+
+# Targets to which this target links.
+set(CMAKE_TARGET_LINKED_INFO_FILES
+  )
+
+# Fortran module output directory.
+set(CMAKE_Fortran_TARGET_MODULE_DIR "")
