@@ -3,10 +3,58 @@
 //
 
 #include "BoardRepresentation.h"
-#include "Utility.h"
 #include "Engine.h"
 #include <sstream>
 #include <iomanip>
+#include <utility>
+
+int pieceCorrespondance(int piece, int color){
+    int pieceTransf;
+    switch(piece){
+        case 1:
+            pieceTransf = color == 1 ? 0 : 6;
+            break;
+        case 3:
+            pieceTransf = color == 1 ? 1 : 7;
+            break;
+        case 4:
+            pieceTransf = color == 1 ? 2 : 8;
+            break;
+        case 5:
+            pieceTransf = color == 1 ? 3 : 9;
+            break;
+        case 9:
+            pieceTransf = color == 1 ? 4 : 10;
+            break;
+        case 100:
+            pieceTransf = color == 1 ? 5 : 11;
+            break;
+
+        default:
+            pieceTransf = 0;
+            break;
+    }
+
+    return pieceTransf;
+}
+
+
+std::vector<std::string> split(std::string toSplit, char splitter){
+    std::vector<std::string> substrings;
+    std::string substring;
+    for(int i = 0; i <= toSplit.length(); i++){
+        if(toSplit[i] == splitter || i == toSplit.length()){
+            substrings.push_back(substring);
+            substring = "";
+        }
+
+        else{
+            substring += toSplit[i];
+        }
+    }
+    return substrings;
+}
+
 
 /*
  * FEN PART :
@@ -382,7 +430,7 @@ unsigned long long BoardRepresentation::getHash() {
     unsigned long long hash = 0;
     unsigned long long toXor;
     int piece;
-    
+
     //Hash pieces
     for(int i = 0; i < 64; i++){
         if(m_piece[i] != 0){
@@ -397,7 +445,7 @@ unsigned long long BoardRepresentation::getHash() {
     if(m_sideToMove == 2){
         hash = hash xor m_zobrist_hash[768];
     }
-    
+
     //Hash castling rights
     int castling = m_castlingRights;
     while(castling > 0){
@@ -418,11 +466,11 @@ unsigned long long BoardRepresentation::getHash() {
             castling -= 0x0001;
         }
     }
-    
+
     //Hash enPassant file
     int enPassantFile = m_enPassant%8;
     if(m_enPassant != -1) hash = hash xor m_zobrist_hash[773 + enPassantFile];
-    
+
     m_positionHash = hash;
     return hash;
 }
@@ -438,21 +486,17 @@ unsigned long long BoardRepresentation::getHash() {
 bool BoardRepresentation::inCheck(int side) {
     //On cherche le roi vite fait
     int kingPosition = -1;
-    for(int i = 0; i < 64; i++){
-        if(m_piece[i] == 100 && m_color[i] == side) kingPosition = i;
+    PieceList pieces = side == 1 ? m_whitePieces : m_blackPieces;
+    for(int i = 0; i < pieces.getAdresses().size(); i++){
+        if(m_piece[i] == 100) kingPosition = i;
     }
 
     //On itère ensuite toooous les moves disponibles partant de chaque case à celle du roi pour voir si ils sont légaux
     int opposingSide = side == 1 ? 2 : 1;
-    for(int i = 0; i < 64; i++){
-        if(i != kingPosition && isPseudoLegal(i, kingPosition, opposingSide)){
-            return true;
-        }
-    }
-    return false;
+    return underAttack(kingPosition, opposingSide);
 }
 
-bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side) {
+bool BoardRepresentation::isPseudoLegal(Move move, int side) {
     bool w_kingside, w_queenside, b_kingside, b_queenside;
     int checkedAdress;
     int lastChecked;
@@ -460,44 +504,44 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
 
     //Si la pièce de la case de départ n'est pas à nous, le move est forcément faux
     //Même si chose si la pièce sur la case d'arrivée est de notre couleur bien entendu
-    if(m_color[startAdress] != side || m_color[endAdress] == side) return false;
+    if(m_color[move.start()] != side || m_color[move.end()] == side) return false;
 
     //On check maintenant les cas des différentes pièces :
-    switch(m_piece[startAdress]){
+    switch(m_piece[move.start()]){
         case 1:
             //Les moves des pions dépendent de leur couleur
-            switch(m_color[startAdress]){
+            switch(m_color[move.start()]){
                 //pion blanc
                 case 1:
                     //Si la pièce de la case d'arrivée est noire et en diagonale d'un pas du pion, le coup est valable
                     //Marche également si cette case est écrite dans m_enPassant
-                    if(((m_color[endAdress] == 2 && (endAdress - startAdress == 7 || endAdress - startAdress == 9))
-                    || (endAdress == m_enPassant && (endAdress - startAdress == 7 || endAdress - startAdress == 9)))
-                    && abs(startAdress % 8 - endAdress % 8) <= 1) return true;
+                    if(((m_color[move.end()] == 2 && (move.end() - move.start() == 7 || move.end() - move.start() == 9))
+                    || (move.end() == m_enPassant && (move.end() - move.start() == 7 || move.end() - move.start() == 9)))
+                    && abs(move.start() % 8 - move.end() % 8) <= 1) return true;
 
                     //Si le pion est sur son rang de départ, il peut avancer de deux cases
                     //Dans ce cas de figure, on ajoute la case en passant
-                    else if(startAdress < 16 && startAdress > 7 && endAdress - startAdress == 16 && m_piece[endAdress] == 0){
-                        m_enPassant = startAdress + 8;
+                    else if(move.start() < 16 && move.start() > 7 && move.end() - move.start() == 16 && m_piece[move.end()] == 0){
+                        m_enPassant = move.start() + 8;
                         return true;
                     }
 
                     //Sinon, le pion n'avance que d'une case en avant, si eu seulement si il n'y a pas de pièce sur la case d'arrivée
-                    else if(endAdress - startAdress != 8 || m_piece[endAdress] != 0) return false;
+                    else if(move.end() - move.start() != 8 || m_piece[move.end()] != 0) return false;
                     break;
 
                 //pion noir
                 case 2:
                     //Pareil mais inversé
-                    if(((m_color[endAdress] == 1 && (endAdress - startAdress == -7 || endAdress - startAdress == -9))
-                       || (endAdress == m_enPassant && (endAdress - startAdress == -7 || endAdress - startAdress == -9)))
-                       && abs(startAdress % 8 - endAdress % 8) <= 1) return true;
+                    if(((m_color[move.end()] == 1 && (move.end() - move.start() == -7 || move.end() - move.start() == -9))
+                       || (move.end() == m_enPassant && (move.end() - move.start() == -7 || move.end() - move.start() == -9)))
+                       && abs(move.start() % 8 - move.end() % 8) <= 1) return true;
 
-                    else if(startAdress <= 55 && startAdress >= 48 && endAdress - startAdress == -16 && m_piece[endAdress] == 0){
-                        m_enPassant = startAdress - 8;
+                    else if(move.start() <= 55 && move.start() >= 48 && move.end() - move.start() == -16 && m_piece[move.end()] == 0){
+                        m_enPassant = move.start() - 8;
                         return true;
                     }
-                    else if(endAdress - startAdress != -8 || m_piece[endAdress] != 0) return false;
+                    else if(move.end() - move.start() != -8 || m_piece[move.end()] != 0) return false;
                     break;
 
                 //Case vide ou invalide
@@ -509,12 +553,12 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
         //Cavalier
         case 3:
             //El famoso L
-            if(abs(endAdress - startAdress) != 6
-                && abs(endAdress - startAdress) != 15
-                && abs(endAdress - startAdress) != 17
-                && abs(endAdress - startAdress) != 10
-                ||(((endAdress%8) - (startAdress%8) > 2 || (endAdress%8) - (startAdress%8) < -2)
-                || ((endAdress/8) - (startAdress/8)) > 2) || (((endAdress/8) - (startAdress/8)) < -2)) return false;
+            if(abs(move.end() - move.start()) != 6
+                && abs(move.end() - move.start()) != 15
+                && abs(move.end() - move.start()) != 17
+                && abs(move.end() - move.start()) != 10
+                ||(((move.end()%8) - (move.start()%8) > 2 || (move.end()%8) - (move.start()%8) < -2)
+                || ((move.end()/8) - (move.start()/8)) > 2) || (((move.end()/8) - (move.start()/8)) < -2)) return false;
             break;
 
         //Fou
@@ -523,8 +567,8 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
             //On arrête chaque branche si l'on tombe sur une pièce ou sur la fin de la board
             //Ne se déplace qu'en diagonale
             for(int i = 0; i < 4; i++){
-                checkedAdress = startAdress;
-                lastChecked = startAdress;
+                checkedAdress = move.start();
+                lastChecked = move.start();
                 switch(i){
                     case 0: direction = 9; break;
                     case 1: direction = 7; break;
@@ -538,7 +582,7 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
                     ||(checkedAdress%8 == 0 && lastChecked%8 == 7)
                     || (checkedAdress/8 == 1 && lastChecked/8 == 7)
                     || (checkedAdress/8 == 7 && lastChecked/8 == 1)) break;
-                    else if(checkedAdress == endAdress) return true;
+                    else if(checkedAdress == move.end()) return true;
                     else if(m_piece[checkedAdress]!=0) break;
                     lastChecked = checkedAdress;
                 }while(true);
@@ -549,8 +593,8 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
         case 5:
             //Diagonale haute gauche
             for(int i = 0; i < 4; i++){
-                lastChecked = startAdress;
-                checkedAdress = startAdress;
+                lastChecked = move.start();
+                checkedAdress = move.start();
                 switch(i){
                     case 0: direction = 1; break;
                     case 1: direction = -1; break;
@@ -564,7 +608,7 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
                        ||(checkedAdress%8 == 0 && lastChecked%8 == 7)
                        || (checkedAdress/8 == 1 && lastChecked/8 == 7)
                        || (checkedAdress/8 == 7 && lastChecked/8 == 1)) break;
-                    else if(checkedAdress == endAdress) return true;
+                    else if(checkedAdress == move.end()) return true;
                     else if(m_piece[checkedAdress]!=0) break;
 
                     lastChecked = checkedAdress;
@@ -575,8 +619,8 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
         //Queen
         case 9:
             for(int i = 0; i < 8; i++){
-                checkedAdress = startAdress;
-                lastChecked = startAdress;
+                checkedAdress = move.start();
+                lastChecked = move.start();
                 switch(i){
                     case 0: direction = 1; break;
                     case 1: direction = -1; break;
@@ -595,7 +639,7 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
                        ||(checkedAdress%8 == 0 && lastChecked%8 == 7)
                        || (checkedAdress/8 == 1 && lastChecked/8 == 7)
                        || (checkedAdress/8 == 7 && lastChecked/8 == 1))break;
-                    else if(checkedAdress == endAdress) return true;
+                    else if(checkedAdress == move.end()) return true;
                     else if(m_piece[checkedAdress]!=0)break;
 
                     lastChecked = checkedAdress;
@@ -607,39 +651,39 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
         case 100:
             //Toutes directions, mais d'un seul pas ou castle
             //Castling
-            if((startAdress == 4 || startAdress == 60) && abs(endAdress - startAdress) == 2 && m_piece[startAdress] == 100) {
+            if((move.start() == 4 || move.start() == 60) && abs(move.end() - move.start()) == 2 && m_piece[move.start()] == 100) {
                 w_queenside = m_castlingRights >= 0x0100 && !inCheck(1)
-                              && isPseudoLegal(0, 3, 1) && m_piece[0] == 5
+                              && isPseudoLegal(w_queenSideR, 1) && m_piece[0] == 5
                               && !underAttack(2, 2) && !underAttack(3, 2)
-                              && startAdress == 4 && endAdress == 2;
+                              && move.start() == 4 && move.end() == 2;
 
                 w_kingside = m_castlingRights >= 0x1000 && !inCheck(1)
-                             && isPseudoLegal(7, 5, 1) && m_piece[7] == 5
+                             && isPseudoLegal(w_kingSideR, 1) && m_piece[7] == 5
                              && !underAttack(6, 2) && !underAttack(5, 2)
-                             && startAdress == 4 && endAdress == 6;
+                             && move.start() == 4 && move.end() == 6;
 
                 b_queenside = m_castlingRights >= 0x0001 && !inCheck(2)
-                              && isPseudoLegal(56, 59, 2) && m_piece[56] == 5
+                              && isPseudoLegal(b_queenSideR, 2) && m_piece[56] == 5
                               && !underAttack(59, 1) && !underAttack(58, 1)
-                              && startAdress == 60 && endAdress == 58;
+                              && move.start() == 60 && move.end() == 58;
 
                 b_kingside = m_castlingRights >= 0x0010 && !inCheck(2)
-                             && isPseudoLegal(63, 61, 2) && m_piece[63] == 5
+                             && isPseudoLegal(b_kingSideR, 2) && m_piece[63] == 5
                              && !underAttack(61, 1) && !underAttack(62, 1)
-                             && startAdress == 60 && endAdress == 62;
+                             && move.start() == 60 && move.end() == 62;
 
                 if(w_queenside || w_kingside || b_queenside || b_kingside) return true;
             }
 
-            if(abs(endAdress - startAdress) != 1
-                && abs(endAdress - startAdress) != 9
-                && abs(endAdress - startAdress) != 8
-                && abs(endAdress - startAdress) != 7
-                || abs(endAdress%8 - startAdress%8) > 1) return false;
+            if(abs(move.end() - move.start()) != 1
+                && abs(move.end() - move.start()) != 9
+                && abs(move.end() - move.start()) != 8
+                && abs(move.end() - move.start()) != 7
+                || abs(move.end()%8 - move.start()%8) > 1) return false;
 
 
             break;
-            //La case est vide ou invalide
+
         default:
             return false;
 
@@ -648,57 +692,69 @@ bool BoardRepresentation::isPseudoLegal(int startAdress, int endAdress, int side
 }
 
 bool BoardRepresentation::underAttack(int square, int attackingSide){
-    for(int i = 0; i < 64; i++){
-        if(m_color[i] != attackingSide) break;
-        else if(i != square && isPseudoLegal(i, square, attackingSide)) return true;
+    PieceList attackingPieces = attackingSide == 1 ? m_whitePieces : m_blackPieces;
+    for(int i = 0; i < attackingPieces.getAdresses().size(); i++){
+        Move move = Move(i, square);
+        if(i != square && isPseudoLegal(move, attackingSide)) return true;
     }
     return false;
 }
 
 
 
-bool BoardRepresentation::makeMove(int startAdress, int endAdress, int special) {
+bool BoardRepresentation::makeMove(Move move) {
+    m_nodeCount++;
 
     //Permet de checker les changements de m_enPassant
     int enPassantStart = m_enPassant;
+    //Copies des piece-list dans le cas d'un takeback
+    PieceList whitePieces = m_whitePieces, blackPieces = m_blackPieces;
 
     //Checks if the move is pseudoLegal to start, if not we don't bother
-    if(!isPseudoLegal(startAdress, endAdress, m_sideToMove)) return false;
+    if(!isPseudoLegal(move, m_sideToMove)) return false;
 
     //Checks if we want to take enPassant
-    if(endAdress == m_enPassant && m_piece[startAdress] == 1){
+    if(move.end() == m_enPassant && m_piece[move.start()] == 1){
         if(m_sideToMove == 1){
-            m_piece[endAdress - 8] = 0; m_color[endAdress - 8] = 0;
+            m_piece[move.end() - 8] = 0; m_color[move.end() - 8] = 0;
         }
         else{
-            m_piece[endAdress + 8] = 0; m_color[endAdress + 8] = 0;
+            m_piece[move.end() + 8] = 0; m_color[move.end() + 8] = 0;
         }
     }
 
     //Castling
-    if((startAdress == 4 || startAdress == 60) && abs(endAdress - startAdress) == 2 && m_piece[startAdress] == 100){
-        switch(endAdress){
+    if((move.start() == 4 || move.start() == 60) && abs(move.end() - move.start()) == 2 && m_piece[move.start()] == 100){
+        switch(move.end()){
             case 62:
                 m_piece[63] = 0; m_color[63] = 0;
                 m_piece[61] = 5; m_color[61] = 2;
+                m_blackPieces.removeAdress(63);
+                m_blackPieces.addAdress(61);
                 m_castlingRights -= 0x0011;
                 break;
 
             case 58:
                 m_piece[56] = 0; m_color[56] = 0;
                 m_piece[59] = 5; m_color[59] = 2;
+                m_blackPieces.removeAdress(56);
+                m_blackPieces.addAdress(59);
                 m_castlingRights -= 0x0011;
                 break;
 
             case 6:
                 m_piece[7] = 0; m_color[7] = 0;
                 m_piece[5] = 5; m_color[5] = 1;
+                m_whitePieces.removeAdress(7);
+                m_whitePieces.addAdress(5);
                 m_castlingRights -= 0x1100;
                 break;
 
             case 2:
                 m_piece[0] = 0; m_color[0] = 0;
                 m_piece[3] = 5; m_color[3] = 1;
+                m_whitePieces.removeAdress(0);
+                m_whitePieces.addAdress(3);
                 m_castlingRights -= 0x1100;
                 break;
 
@@ -707,34 +763,46 @@ bool BoardRepresentation::makeMove(int startAdress, int endAdress, int special) 
     }
 
     //Regle des 50 coups (qui apparemment sont en fait 100 coups wtf)
-    if(m_piece[endAdress] == 0 || m_piece[startAdress] != 1) m_fifty++;
+    if(m_piece[move.end()] == 0 || m_piece[move.start()] != 1) m_fifty++;
     else m_fifty = 0;
 
-    bool isPromotable = m_piece[startAdress] == 1;
+    bool isPromotable = m_piece[move.start()] == 1;
 
-    m_piece[endAdress] = m_piece[startAdress];
-    m_color[endAdress] = m_color[startAdress];
-    m_piece[startAdress] = 0;
-    m_color[startAdress] = 0;
+    m_piece[move.end()] = m_piece[move.start()];
+    m_color[move.end()] = m_color[move.start()];
+    m_piece[move.start()] = 0;
+    m_color[move.start()] = 0;
+
+    if(m_sideToMove == 1){
+        m_whitePieces.removeAdress(move.start());
+        m_whitePieces.addAdress(move.end());
+        m_blackPieces.removeAdress(move.end());
+    }
+
+    else{
+        m_blackPieces.removeAdress(move.start());
+        m_blackPieces.addAdress(move.end());
+        m_whitePieces.removeAdress(move.end());
+    }
 
 
 
-    if(isPromotable && ((endAdress <= 63 && endAdress >= 56) || (endAdress <= 7 && endAdress >= 0))){
-        switch(special){
+    if(isPromotable && ((move.end() <= 63 && move.end() >= 56) || (move.end() <= 7 && move.end() >= 0))){
+        switch(move.special()){
             case 3:
-                m_piece[endAdress] = 3;
+                m_piece[move.end()] = 3;
                 break;
 
             case 4:
-                m_piece[endAdress] = 4;
+                m_piece[move.end()] = 4;
                 break;
 
             case 5:
-                m_piece[endAdress] = 5;
+                m_piece[move.end()] = 5;
                 break;
 
             default:
-                m_piece[endAdress] = 9;
+                m_piece[move.end()] = 9;
                 break;
         }
     }
@@ -751,7 +819,7 @@ bool BoardRepresentation::makeMove(int startAdress, int endAdress, int special) 
     m_positionHistory.push(getFEN());
 
     if(inCheck(currentSide)){
-        takeback();
+        takeback(whitePieces, blackPieces);
         return false;
     }
 
@@ -773,29 +841,27 @@ void BoardRepresentation::moveGenerator() {
     m_attackingMoves.clear();
     m_quietMoves.clear();
 
-    std::vector<int> coup;
+    PieceList pieceToCheck = m_sideToMove == 1 ? m_whitePieces : m_blackPieces;
+    PieceList oppositePieces = m_sideToMove == 1 ? m_blackPieces : m_whitePieces;
+    int sideToMove = m_sideToMove;
 
-    for(int caseDepart = 0; caseDepart < 64; caseDepart++){
-        for(int caseArrivee = 0; caseArrivee < 64; caseArrivee++) {
-            if (m_piece[caseDepart] != 0 && m_color[caseDepart] == m_sideToMove) {
-                if (makeMove(caseDepart, caseArrivee, -1)) {
-                    coup.clear();
-                    coup.push_back(caseDepart);
-                    coup.push_back(caseArrivee);
-                    coup.push_back(-1);
+    for(int i = 0; i < pieceToCheck.getAdresses().size(); i++) {
+        int start = pieceToCheck.getAdresses().at(i);
+        for (int j = 0; j < 64; j++) {
+            Move move = Move(start, j);
+            if (makeMove(move)) {
+                if(sideToMove == 1) takeback(pieceToCheck, oppositePieces);
+                else takeback(oppositePieces, pieceToCheck);
 
-                    takeback();
 
-                    if (m_piece[caseArrivee] != 0) m_attackingMoves.push_back(coup);
-                    else m_quietMoves.push_back(coup);
+                if (oppositePieces.exists(move.end())) m_attackingMoves.push_back(move);
+                else m_quietMoves.push_back(move);
 
-                    if (m_piece[caseDepart] == 1 && (caseArrivee <= 63 && caseArrivee >= 56) ||
-                        (caseArrivee <= 7 && caseArrivee >= 0)) {
-                        for (int prom : m_possibleProm) {
-                            coup.pop_back();
-                            coup.push_back(prom);
-                            m_moves.push_back(coup);
-                        }
+                if (m_piece[move.start()] == 1 && (move.end() <= 63 && move.end() >= 56) ||
+                (move.end() <= 7 && move.end() >= 0)) {
+                    for (int prom : m_possibleProm) {
+                        move.setSpe(prom);
+                        m_quietMoves.push_back(move);
                     }
                 }
             }
@@ -803,8 +869,12 @@ void BoardRepresentation::moveGenerator() {
     }
 
     //Permet à la fonction alpha-beta de tester les captures en premieres
-    m_moves.insert(m_moves.end(), m_attackingMoves.begin(), m_attackingMoves.end());
-    m_moves.insert(m_moves.end(), m_quietMoves.begin(), m_quietMoves.end());
+    for(auto & m_attackingMove : m_attackingMoves){
+        m_moves.push_back(m_attackingMove);
+    }
+    for(auto & m_quietMove : m_quietMoves){
+        m_moves.push_back(m_quietMove);
+    }
 }
 
 void BoardRepresentation::generateCaptures() {
@@ -812,31 +882,20 @@ void BoardRepresentation::generateCaptures() {
 
     m_attackingMoves.clear();
 
-    std::vector<int> coup;
+    PieceList pieceToCheck = m_sideToMove == 1 ? m_whitePieces : m_blackPieces;
+    PieceList enemyPiece = m_sideToMove == 1 ? m_blackPieces : m_whitePieces;
+    int sideToMove = m_sideToMove;
 
-    for(int caseDepart = 0; caseDepart < 64; caseDepart++){
-        for(int caseArrivee = 0; caseArrivee < 64; caseArrivee++){
-            if(m_piece[caseDepart] != 0 && m_piece[caseArrivee] != 0){
-                if(makeMove(caseDepart, caseArrivee, -1)){
-                    coup.clear();
-                    coup.push_back(caseDepart);
-                    coup.push_back(caseArrivee);
-                    coup.push_back(-1);
+    for(int i = 0; i < pieceToCheck.getAdresses().size(); i++){
+        int start = pieceToCheck.getAdresses().at(i);
+        for(int j = 0; j < enemyPiece.getAdresses().size(); j++){
+            int end = enemyPiece.getAdresses().at(j);
+            Move move = Move(start, end);
+            if(makeMove(move)){
+                if(sideToMove == 1) takeback(pieceToCheck, enemyPiece);
+                else takeback(enemyPiece, pieceToCheck);
 
-                    takeback();
-
-                    if(m_piece[caseArrivee] != 0) m_attackingMoves.push_back(coup);
-                    else m_quietMoves.push_back(coup);
-
-                    if(m_piece[caseDepart] == 1 && (caseArrivee <= 63 && caseArrivee >= 56) || (caseArrivee <= 7 && caseArrivee >= 0)){
-                        for(int prom : m_possibleProm){
-                            coup.pop_back();
-                            coup.push_back(prom);
-                            m_moves.push_back(coup);
-                        }
-                    }
-
-                }
+                if(m_piece[end] != 0) m_attackingMoves.push_back(move);
             }
         }
     }
@@ -844,7 +903,10 @@ void BoardRepresentation::generateCaptures() {
 
 
 
-void BoardRepresentation::takeback() {
+void BoardRepresentation::takeback(PieceList whitePieces, PieceList blackPieces) {
+    m_whitePieces = std::move(whitePieces);
+    m_blackPieces = std::move(blackPieces);
+
     if(m_positionHistory.size() > 1) m_positionHistory.pop();
     setFEN(m_positionHistory.top());
     m_positionHash = getHash();
@@ -877,13 +939,6 @@ void BoardRepresentation::showCurrentPosition() {
     std::cout << "Evaluation : " << evalutation() << std::endl << std::endl;
 
     std::cout << "Move : " << m_coups << std::endl;
-
-    std::cout << std::showbase // show the 0x prefix
-         << std::internal // fill between the prefix and the number
-         << std::setfill('0'); // fill with 0s
-
-
-    std::cout << "Current hash : " << std::hex << std::setw(4) << m_positionHash << std::dec << std::setw(3) << std::endl << std::endl;
 }
 
 
@@ -913,13 +968,29 @@ std::string BoardRepresentation::adressToMoveParser(int adress) {
     return move;
 }
 
-int BoardRepresentation::play(int engineSide) {
+int BoardRepresentation::play(int engineSide){
+    Engine engine = Engine(3, this);
+    Engine* ptr_engine = &engine;
+
+    playMove(engineSide, ptr_engine, true);
+    return 0;
+}
+
+
+int BoardRepresentation::playMove(int engineSide, Engine* engine, bool perft = false) {
+
+    //Si on utilise perft (calcul de performances en node/sec), on start le compteur ici
+    m_nodeCount = 0;
+    time_t moveStartTime;
+    time_t moveEndTime;
+
+    if(perft){
+        moveStartTime = time(nullptr);
+    }
 
     if(m_sideToMove == 1) m_coups++;
-
-    std::string move;
-    std::string start;
-    std::string end;
+    int start;
+    int end;
     int promotion = -1;
 
     moveGenerator();
@@ -927,28 +998,43 @@ int BoardRepresentation::play(int engineSide) {
     if(checkmated() == 1) return m_sideToMove;
 
     if(engineSide){
-        Engine engine = Engine(3, this);
-        std::vector<int> engineMove = engine.search();
-        start = adressToMoveParser(engineMove.at(0));
-        end = adressToMoveParser(engineMove.at(1));
-        promotion = engineMove.at(2);
+        Move engineMove = engine->search();
+        start = engineMove.start();
+        end = engineMove.end();
+        promotion = engineMove.special();
+        std::cout << "The engine plays " << start << " " << end << std::endl;
     }
 
     else{
+        std::string humanMove;
+        std::string humanStart;
+        std::string humanEnd;
         std::cout << "Enter the move you want to play : (forme <depart><arrivee><promotion>) " << std::endl;
-        std::cin >> move;
-        if(move.size() > 4) start = move.substr(0, 2), end = move.substr(2, 2), promotion = (int) move.substr(4, 1)[0] - (int)'0';
-        else start = move.substr(0, 2), end = move.substr(2, 2);
+        std::cin >> humanMove;
+        if(humanMove.size() > 4) humanStart = humanMove.substr(0, 2), humanEnd = humanMove.substr(2, 2), promotion = (int) humanMove.substr(4, 1)[0] - (int)'0';
+        else humanStart = humanMove.substr(0, 2), humanEnd = humanMove.substr(2, 2);
+
+        start = writtenMoveParser(humanStart); end = writtenMoveParser(humanEnd);
     }
 
-    if(!makeMove(writtenMoveParser(start), writtenMoveParser(end), promotion)){
+    Move move = Move(start, end, promotion);
+
+    if(!makeMove(move)){
         std::cout << "This move isn't legal ! Please enter a legal move" << std::endl << std::endl;
-        play(engineSide);
+        playMove(engineSide, engine, perft);
     }
 
     else{
         showCurrentPosition();
-        play(engineSide);
+
+        if(perft){
+            moveEndTime = time(nullptr);
+            double elapsed = difftime(moveEndTime, moveStartTime);
+
+            std::cout << "Calculated " << m_nodeCount << " nodes in " << elapsed << " seconds. (" << (int)(m_nodeCount/elapsed) << " node/sec)" << std::endl;
+        }
+
+        playMove(engineSide, engine, perft);
     }
 
     if(checkmated() == -1) return -1;
@@ -961,50 +1047,38 @@ int BoardRepresentation::checkmated() {
     return 0;
 }
 
-std::vector<std::vector<int>> BoardRepresentation::getMoves() {
+std::vector<Move> BoardRepresentation::getMoves() {
     return m_moves;
 }
 
 int BoardRepresentation::evalutation() {
-    std::vector<int> whitePieces;
-    std::vector<int> whiteAdresses;
-    std::vector<int> blackPieces;
-    std::vector<int> blackAdresses;
-    for(int i = 0; i < 64; i++) {
-        switch(m_piece[i]){
-            case 0:
-                break;
-
-            default:
-                m_color[i] == 1 ? whitePieces.push_back(m_piece[i]) : blackPieces.push_back(m_piece[i]);
-                m_color[i] == 1 ? whiteAdresses.push_back((7-(i/8))*8 + i%8) : blackAdresses.push_back(i);
-        }
-    }
-    
     int whiteEval = 0;
     int wbishopPair = 0, wrookPair = 0, wknightPair = 0;
-    for(int i = 0; i < whitePieces.size(); i++){
-        switch(whitePieces.at(i)){
-            case 1 : whiteEval += 100 + m_pieceSquare[0][whiteAdresses.at(i)]; break;
-            case 3 : whiteEval += 350 + m_pieceSquare[1][whiteAdresses.at(i)]; wknightPair++; break;
-            case 4 : whiteEval += 350 + m_pieceSquare[2][whiteAdresses.at(i)]; wbishopPair++; break;
-            case 5 : whiteEval += 525 + m_pieceSquare[3][whiteAdresses.at(i)]; wrookPair++; break;
-            case 9 : whiteEval += 1000 + m_pieceSquare[4][whiteAdresses.at(i)]; break;
-            case 100 : whiteEval += 10000 + m_pieceSquare[5][whiteAdresses.at(i)]; break;
+    for(int i = 0; i < m_whitePieces.getAdresses().size(); i++){
+        int j = m_whitePieces.getAdresses().at(i);
+        int jA = (7 - (int)(j/8))*8 + j%8;
+        switch(m_piece[j]){
+            case 1 : whiteEval += 100 + m_pieceSquare[0][jA]; break;
+            case 3 : whiteEval += 350 + m_pieceSquare[1][jA]; wknightPair++; break;
+            case 4 : whiteEval += 350 + m_pieceSquare[2][jA]; wbishopPair++; break;
+            case 5 : whiteEval += 525 + m_pieceSquare[3][jA]; wrookPair++; break;
+            case 9 : whiteEval += 1000 + m_pieceSquare[4][jA]; break;
+            case 100 : whiteEval += 10000 + m_pieceSquare[5][jA]; break;
             default: break;
         }
     }
 
     int blackEval = 0;
     int bbishopPair = 0, brookPair = 0, bknightPair = 0;
-    for(int i = 0; i < blackPieces.size(); i++){
-        switch(blackPieces.at(i)){
-            case 1 : blackEval += 100 + m_pieceSquare[0][blackAdresses.at(i)]; break;
-            case 3 : blackEval += 350 + m_pieceSquare[1][blackAdresses.at(i)]; bknightPair++; break;
-            case 4 : blackEval += 350 + m_pieceSquare[2][blackAdresses.at(i)]; bbishopPair++; break;
-            case 5 : blackEval += 525 + m_pieceSquare[3][blackAdresses.at(i)]; brookPair++; break;
-            case 9 : blackEval += 1000 + m_pieceSquare[4][blackAdresses.at(i)]; break;
-            case 100 : blackEval += 10000 + m_pieceSquare[5][blackAdresses.at(i)]; break;
+    for(int i = 0; i < m_blackPieces.getAdresses().size(); i++){
+        int j = m_blackPieces.getAdresses().at(i);
+        switch(m_piece[j]){
+            case 1 : blackEval += 100 + m_pieceSquare[0][j]; break;
+            case 3 : blackEval += 350 + m_pieceSquare[1][j]; bknightPair++; break;
+            case 4 : blackEval += 350 + m_pieceSquare[2][j]; bbishopPair++; break;
+            case 5 : blackEval += 525 + m_pieceSquare[3][j]; brookPair++; break;
+            case 9 : blackEval += 1000 + m_pieceSquare[4][j]; break;
+            case 100 : blackEval += 10000 + m_pieceSquare[5][j]; break;
             default: break;
         }
     }

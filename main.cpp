@@ -7,7 +7,7 @@ int main() {
     testBoard.showCurrentPosition();
 
 
-    int result = testBoard.play(false);
+    int result = testBoard.play(true);
 
     switch(result){
         case 1:

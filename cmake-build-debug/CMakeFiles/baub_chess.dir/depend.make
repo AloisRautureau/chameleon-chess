@@ -4,11 +4,12 @@
 CMakeFiles/baub_chess.dir/ChessEngine/BoardRepresentation.cpp.o: ../ChessEngine/BoardRepresentation.cpp
 CMakeFiles/baub_chess.dir/ChessEngine/BoardRepresentation.cpp.o: ../ChessEngine/BoardRepresentation.h
 CMakeFiles/baub_chess.dir/ChessEngine/BoardRepresentation.cpp.o: ../ChessEngine/Engine.h
-CMakeFiles/baub_chess.dir/ChessEngine/BoardRepresentation.cpp.o: ../ChessEngine/Utility.h
+CMakeFiles/baub_chess.dir/ChessEngine/BoardRepresentation.cpp.o: ../ChessEngine/TranspositionTable.h
 
 CMakeFiles/baub_chess.dir/ChessEngine/Engine.cpp.o: ../ChessEngine/BoardRepresentation.h
 CMakeFiles/baub_chess.dir/ChessEngine/Engine.cpp.o: ../ChessEngine/Engine.cpp
 CMakeFiles/baub_chess.dir/ChessEngine/Engine.cpp.o: ../ChessEngine/Engine.h
+CMakeFiles/baub_chess.dir/ChessEngine/Engine.cpp.o: ../ChessEngine/TranspositionTable.h
 
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/BoardRepresentation.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../main.cpp

@@ -233,7 +233,7 @@
 		<Unit filename="/home/bitterboyy/Documents/baub_chess/ChessEngine/Engine.h">
 			<Option target="baub_chess"/>
 		</Unit>
-		<Unit filename="/home/bitterboyy/Documents/baub_chess/ChessEngine/Utility.h">
+		<Unit filename="/home/bitterboyy/Documents/baub_chess/ChessEngine/TranspositionTable.h">
 			<Option target="baub_chess"/>
 		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub_chess/googletest/BoardRepresentationTests.cpp">

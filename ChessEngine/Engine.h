@@ -5,20 +5,25 @@
 #ifndef BAUB_CHESS_ENGINE_H
 #define BAUB_CHESS_ENGINE_H
 
+#include "TranspositionTable.h"
 #include "BoardRepresentation.h"
+
+class BoardRepresentation;
 
 
 class Engine{
 private:
     int m_depth;
     BoardRepresentation* m_board;
-    std::stack<std::vector<int>> m_pvnodes;
+    //TranspositionTable m_table;
 
 public:
-    explicit Engine(int depth, BoardRepresentation* board);
+    Engine(int depth, BoardRepresentation* board) : m_board(board), m_depth(depth){};
     int quiescence(int alpha, int beta);
     int alphaBeta(int alpha, int beta, int depth);
-    std::vector<int> search();
+    Move search();
+
+    friend BoardRepresentation;
 };
 
 
