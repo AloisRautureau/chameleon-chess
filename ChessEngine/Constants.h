@@ -77,13 +77,18 @@ int directionsDame[8] = {8, -8, 1, -1, -7, 7, -9, 9};
 //Permet de faire des takeback facilement
 class Position{
 public:
-    Move coup;
-    int piecePrise;
     int castling;
     int fiftyMoveRule;
+    int pieces[64]{};
+    int color[64]{};
 
-    Position(Move coup, int prise, int castling, int side, int fifty) :
-    coup(coup), piecePrise(prise), castling(castling), fiftyMoveRule(fifty){};
+    Position(int castling, int fifty, const int piecesp[64], const int colorp[64]) :
+    castling(castling), fiftyMoveRule(fifty){
+        for(int i = 0; i < 64; i++){
+            pieces[i] = piecesp[i];
+            color[i] = colorp[i];
+        }
+    };
 };
 
 //Permet de stocker facilement les coups et de leur donner un score pour le move ordering
@@ -117,9 +122,10 @@ public:
     }
 
     //Sert quand l'humain joue
-    Move searchMove(int start, int end){
+    Move searchMove(int start, int end, int spe = -1){
         for(Move move : m_moves){
-            if(move.start == start && move.end == end) return move;
+            if((spe != -1 && move.start == start && move.end == end && move.special == spe)
+                || (move.start == start && move.end == end)) return move;
         }
         return {0, 0, 0};
     }
@@ -178,7 +184,7 @@ int TBLPIONS[64] = {
         0,  0,  0,  0,  0,  0,  0,  0,
         50, 50, 50, 50, 50, 50, 50, 50,
         10, 10, 20, 30, 30, 20, 10, 10,
-        5,  5, 10, 25, 25, 10,  5,  5,
+        5,  5, 10, 30, 30, 10,  5,  5,
         0,  0,  0, 20, 20,  0,  0,  0,
         5, -5,-10,  0,  0,-10, -5,  5,
         5, 10, 10,-20,-20, 10, 10,  5,

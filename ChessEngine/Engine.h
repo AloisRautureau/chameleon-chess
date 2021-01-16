@@ -5,6 +5,8 @@
 #ifndef BAUB_CHESS_ENGINE_H
 #define BAUB_CHESS_ENGINE_H
 
+#include <utility>
+
 #include "Constants.h"
 #include "BoardRep.h"
 
@@ -12,10 +14,12 @@ class Engine{
 private:
     int m_depth;
     int m_nodes = 0;
-    BoardRep* m_board;
+    BoardRep *m_board;
 
 public:
-    explicit Engine(int depth, BoardRep* board) : m_depth(depth), m_board(board){};
+    explicit Engine(int depth, BoardRep *board) : m_depth(depth), m_board(board){};
+
+    ~Engine(){delete m_board;}
 
     /*
      * TODO search should implement alpha beta, opening books, iterative deepening and transposition tables/PV nodes
@@ -23,18 +27,20 @@ public:
 
 
     //TODO Fonction qui lance la recherche de la node racine et renvoie le meilleur coup
-    Move searchRoot(int sideToReturn){
+    Move searchRoot(int sideToMax){
         int bestValue = -99999;
-        Move bestMove;
         int worstValue = 99999;
-        Move worstMove;
 
         m_board->generatePseudoLegal();
         std::vector<Move> moves = m_board->getMoveStack().getStack();
+        Move worstMove = moves[0];
+        Move bestMove = moves[0];
 
         for(Move move : moves){
+            std::cout << move.start << " " << move.end << " : ";
             m_board->makeMove(move);
             int eval = searchNode(-99999, 99999, m_depth - 1);
+            std::cout << eval << std::endl;
             m_board->takeback();
 
             if(eval > bestValue){
@@ -50,8 +56,9 @@ public:
 
         std::cout << "The engine found " << bestMove.start << " " << bestMove.end << " to be the best move" << std::endl;
         std::cout << "The engine found " << worstMove.start << " " << worstMove.end << " to be the worst move" << std::endl;
+        std::cout << "Nodes searched : " << m_nodes << std::endl;
 
-        if(sideToReturn == WHITE) return bestMove;
+        if(sideToMax == WHITE) return bestMove;
         else return worstMove;
     }
 
@@ -75,13 +82,11 @@ public:
             //Si le move est légal..
             if(m_board->makeMove(move)){
                 //On évalue la position, puis on annule le coup
-                int eval = -searchNode(-alpha, -beta, depth-1);
+                int eval = -searchNode(-beta, -alpha, depth-1);
                 m_board->takeback();
 
-                if(score >= beta) return beta; //Beta cutoff, le coup est trop avantageux pour que l'adversaire le permette
-                if(score > alpha){
-                    alpha = eval;
-                }
+                if(eval >= beta) return beta;
+                if(eval > alpha) alpha = eval;
             }
         }
         return alpha;
@@ -97,13 +102,16 @@ public:
         m_board->generateCaptures();
         std::vector<Move> captures = m_board->getMoveStack().getStack();
 
-        for(Move capture : captures){
-            m_board->makeMove(capture);
-            int eval = -quiescence(-beta, -alpha);
-            m_board->takeback();
+        if(captures.empty()) return stand_pat;
 
-            if(score >= beta) return beta;
-            if(score > alpha) alpha = score;
+        for(Move capture : captures){
+            if(m_board->makeMove(capture)){
+                int eval = -quiescence(-beta, -alpha);
+                m_board->takeback();
+
+                if(eval >= beta) return beta;
+                if(eval > alpha) alpha = eval;
+            }
         }
         return alpha;
     }
