@@ -6,33 +6,21 @@
 
 #IncludeRegexTransform: 
 
-/home/bitterboyy/Documents/baub-chess/ChessEngine/BoardRep.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Board.h
 Constants.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
-
 /home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
 utility
 -
-vector
--
-bitset
--
+
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
 stack
 -
-
-/home/bitterboyy/Documents/baub-chess/ChessEngine/Engine.h
-utility
+iostream
 -
-Constants.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
-BoardRep.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/BoardRep.h
 
 /home/bitterboyy/Documents/baub-chess/main.cpp
 iostream
 -
-ChessEngine/BoardRep.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/BoardRep.h
-ChessEngine/Engine.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/Engine.h
+ChessEngine/Board.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Board.h
 

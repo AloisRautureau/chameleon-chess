@@ -1,57 +1,32 @@
 #include <iostream>
-#include "ChessEngine/BoardRep.h"
-#include "ChessEngine/Engine.h"
-
+#include "ChessEngine/Board.h"
 
 
 int main() {
-    BoardRep board = BoardRep();
-    std::cout << &board << std::endl;
+    Board board;
 
-    Engine engine = Engine(3, &board);
+    board.perftTest();
 
-    int engineSide = 0;
-    bool engineOnly = true;
+    //While no side is in checkmate, we keep asking for moves
+    while(!(board.checkmate(WHITE) || board.checkmate(BLACK))){
+        //Show the current position
+        board.showPosition();
+        board.generate();
 
-    while(true){
-        Move move = Move(0, 0, 0);
-        bool legal;
+        movebits move = 0;
 
-        board.showCurrentPosition();
-        board.generatePseudoLegal();
-        do{
-            if(engineSide == board.getSide() || engineOnly) {
-                move = engine.searchRoot(board.getSide());
-                legal = true;
-            }
-            else{
-                std::string humanMove;
-                std::string startstr, endstr;
-                char spestr;
-                int start, end, spe;
-
-                std::cin >> humanMove;
-
-                if(humanMove.size() >= 5){
-                    startstr = humanMove.substr(0, 2); start = coordinateToInt(startstr);
-                    endstr = humanMove.substr(2, 2); end = coordinateToInt(endstr);
-                    spestr = humanMove[4]; spe = spestr - '0';
-                    move = board.getMoveStack().searchMove(start, end, spe);
+        while(move == 0){
+            std::string moveh;
+            std::cin >> moveh;
+            //Check if the move is in the generated list
+            move = board.isLegal(humanMove(moveh));
+            if(move){;
+                if(!board.makeMove(move)){
+                    std::cout << "Illegal move" << std::endl;
                 }
-                else{
-                    startstr = humanMove.substr(0, 2); start = coordinateToInt(startstr);
-                    endstr = humanMove.substr(2, 2); end = coordinateToInt(endstr);
-                    move = board.getMoveStack().searchMove(start, end, -1);
-                }
-                legal = move.start != 0 && move.end != 0;
-                std::cout << "aled" << legal << std::endl;
             }
-        }while(!legal);
-        board.generatePseudoLegal();
-
-        board.makeMove(move);
+            else std::cout << "Illegal move" << std::endl;
+        }
     }
-
-
     return 0;
 }

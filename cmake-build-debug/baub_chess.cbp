@@ -80,13 +80,10 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/BoardRep.h">
+		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Board.h">
 			<Option target="baub_chess"/>
 		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h">
-			<Option target="baub_chess"/>
-		</Unit>
-		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Engine.h">
 			<Option target="baub_chess"/>
 		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/main.cpp">
