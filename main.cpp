@@ -5,6 +5,8 @@
 int main() {
     Board board;
 
+    board.evaluation();
+
     board.perftTest();
 
     //While no side is in checkmate, we keep asking for moves

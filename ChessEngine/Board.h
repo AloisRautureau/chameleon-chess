@@ -47,23 +47,12 @@ private:
      * A value of -1 in an array indicates that there are no pieces after that, stopping any iteration
      */
     int whitePieces[6][8] = {
-            //Pawns
             {8, 9, 10, 11, 12, 13, 14, 15},
-
-            //Knights
-            {1, 6, -1, -1, -1, -1, -1},
-
-            //Bishops
-            {2, 5, -1, -1, -1, -1, -1},
-
-            //Rooks
-            {0, 7, -1, -1, -1, -1, -1},
-
-            //Queen
-            {3, -1, -1, -1, -1, -1, -1},
-
-            //King
-            {4, -1, -1, -1, -1, -1, -1}
+            {1, 6, -1, -1, -1, -1, -1, -1},
+            {2, 5, -1, -1, -1, -1, -1, -1},
+            {0, 7, -1, -1, -1, -1, -1, -1},
+            {3, -1, -1, -1, -1, -1, -1, -1},
+            {4, -1, -1, -1, -1, -1, -1, -1}
     };
     int blackPieces[6][8] = {
             {48, 49, 50, 51, 52, 53, 54, 55},
@@ -568,6 +557,7 @@ public:
     //Function purposed with testing the performance and exactitude of the generation function
     long perft(int depth){
         long nodes = 0;
+        int captures = 0;
 
         if(depth == 0 || checkmate(sideToMove)) return 1ULL;
 
@@ -613,9 +603,9 @@ public:
             for(int i = std::to_string(nodes).length() + 2; i < 16; i++) std::cout << " ";
             std::cout.precision(2);
             std::cout << "| " << std::fixed << diff;
-            for(int i = 3 + 2; i < 10; i++) std::cout << " ";
-            std::cout << "| " << std::fixed <<  nodes/diff;
-            for(int i = 3 + 2; i < 14; i++) std::cout << " ";
+            for(int i = std::to_string((int)diff).length() + 5; i < 10; i++) std::cout << " ";
+            std::cout << "| " << std::fixed << nodes/diff;
+            for(int i = std::to_string((int)nodes/diff).length() + 5; i < 18; i++) std::cout << " ";
             std::cout << "|";
             if(depth < 11 && nodes != nodesExpected[depth]) std::cout << (nodes > nodesExpected[depth] ? " !!! too many moves !!! " : " !!! missing moves !!! ") << std::endl;
             else std::cout << std::endl;
@@ -699,6 +689,57 @@ public:
             }
         }
         return 0;
+    }
+
+    //The evaluation function returns the current "score" of the position
+    int evaluation(){
+        /*
+         * This must take into account :
+         * Material values
+         * Pawn structure
+         * Piece to square
+         * Mobility
+         *
+         * Must invert the result when black plays for negamax
+         */
+        //TODO Piece-square evaluation in endgame
+        int scores[2] = {0, 0};
+        int material[2] = {0, 0};
+        int pSqBonuses[2] = {0, 0};
+        int pieceCounterWhite[6] = {0, 0, 0, 0, 0, 0};
+        int pieceCounterBlack[6] = {0, 0, 0, 0, 0, 0};
+
+        //We iterate the picelists piecetype by piecetype
+        for(int pieceType = 0; pieceType < 6; pieceType++){
+            for(int i = 0; i < 8; i++){
+                if(whitePieces[pieceType][i] != -1){
+                    material[WHITE] += materialValue[pieceType];
+                    pSqBonuses[WHITE] += pSquare[pieceType][whitePieces[pieceType][i]%8 + (7 - whitePieces[pieceType][i]/8)*8];
+                    pieceCounterWhite[pieceType]++;
+                }
+                if(blackPieces[pieceType][i] != -1){
+                    material[BLACK] += materialValue[pieceType];
+                    pSqBonuses[BLACK] += pSquare[pieceType][blackPieces[pieceType][i]];
+                    pieceCounterBlack[pieceType]++;
+                }
+            }
+        }
+
+        std::cout << "Material balance : " << material[WHITE] - material[BLACK] << std::endl;
+        std::cout << "Piece placement bonuses : " << pSqBonuses[WHITE] - pSqBonuses[BLACK] << std::endl;
+        for(int i = 0; i < 6; i++){
+            std::cout << "White has " << pieceCounterWhite[i] << " pieceType" << i << std::endl;
+            std::cout << "Black has " << pieceCounterBlack[i] << " pieceType" << i << std::endl;
+        }
+
+
+        //TODO Pawn structure using hash tables
+
+        //TODO Piece value eval :
+        //Knights decrease in value as less pawns are here
+        //Bishops surrounded by pawns lose a lot of mobility, bishop pair gives a bonus
+        //Rooks increase in value as pawns disappear, are better on an open file and on the seventh rank, in endgames they are good if on the same file as a pawn
+
     }
 };
 
