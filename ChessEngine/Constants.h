@@ -7,258 +7,109 @@
 
 #include <stack>
 #include <iostream>
-
-//Move type
-//It keeps 12bits for from-to squares (6bits each), and 4 bits for special stuff
-typedef unsigned short movebits;
-
-//Converts from, to, spe to movebits
-movebits encodeMove(int from, int to, int spe){
-    movebits move = 0;
-    move ^= from << 10;
-    move ^= to << 4;
-    move ^= spe;
-
-    return move;
-}
-
-//Getters for movebits
-int from(movebits move){
-    return move >> 10;
-}
-
-int to(movebits move){
-    return (move & 0b0000001111110000) >> 4;
-}
-
-int spe(movebits move){
-    return (move & 0b0000000000001111);
-}
-
-//Move constants for spe
-const int QUIET = 0;
-const int DPAWNPUSH = 1;
-const int KINGC = 2;
-const int QUEENC = 3;
-const int CAP = 4;
-const int EPCAP = 5;
-const int KNIGHTPROM = 8;
-const int BISHOPPROM = 9;
-const int ROOKPROM = 10;
-const int QUEENPROM = 11;
-const int KNIGHTPROMCAP = 12;
-const int BISHOPPROMCAP = 13;
-const int ROOKPROMCAP = 14;
-const int QUEENPROMCAP = 15;
-
-
-//Positional information
-//Position info stores ep square on 6bits, castling on 4bits, fiftymoves rule on 7bits and captured piece on 3bits (20bits total, rounded to 32bits)
-typedef unsigned int position;
-
-//Encodes a position
-position encodePosition(int ep, int castling, int fiftymoves, int cap){
-    position pos = 0;
-    pos ^= ep << 14;
-    pos ^= castling << 10;
-    pos ^= fiftymoves << 3;
-    pos ^= cap;
-
-    return pos;
-}
-
-int ep(position pos){
-    return (pos >> 14);
-}
-
-int castle(position pos){
-    return (pos & 0b00000011110000000000) >> 10;
-}
-
-int fiftymoves(position pos){
-    return (pos & 0b00000000001111111000) >> 3;
-}
-
-int cap(position pos){
-    return (pos & 0b00000000000000000111);
-}
-
-
-
-const int EMPTY = 7;
-
-//Pieces
-const int PAWN = 0;
-const int KNIGHT = 1;
-const int BISHOP = 2;
-const int ROOK = 3;
-const int QUEEN = 4;
-const int KING = 5;
-
-const int materialValue[6] = {100, 325, 350, 500, 900, 99999};
-
-//Piece-square tables
-
-const int pSquare[6][64]{
-    //Pawns
-    //Penalty if they don't protect castled squares anymore, bonus for controlling the middle and advanced pawns
-        {
-           0,   0,   0,   0,   0,   0,   0,   0,
-          80,  80,  80,  80,  80,  80,  80,  80,
-          40,  40,  40,  40,  40,  40,  40,  40,
-          25,  30,  30,  35,  35,  30,  30,  25,
-         -10, -10, -10,  30,  30, -10, -10, -10,
-         -20, -20,  10,  20,  20,  10, -20, -20,
-          10,  10,   0, -20, -20,   0,  10,  10,
-           0,   0,   0,   0,   0,   0,   0,   0
-        },
-
-        //Knight
-        //Penalty on the rim, bonus near the center
-        {
-            -15, -15, -15, -15, -15, -15, -15, -15,
-            -15, -10, -10, -10, -10, -10, -10, -15,
-            -15, -10,   0,   0,   0,   0, -10, -15,
-            -15, -10,   0,  20,  20,   0, -10, -15,
-            -15, -10,   0,  20,  20,   0, -10, -15,
-            -15, -10,   0,   0,   0,   0, -10, -15,
-            -15, -10, -10, -10, -10, -10, -10, -15,
-            -15, -15, -15, -15, -15, -15, -15, -15
-        },
-
-        //Bishop
-        //The longer the diagonal the better
-        {
-            50, 20,  0,-10,-10,  0, 20, 50,
-            20, 50, 20,  0,  0, 20, 50, 20,
-             0, 20, 50, 20, 20, 50, 20,  0,
-           -10,  0, 20, 50, 50, 20,  0,-10,
-           -10,  0, 20, 50, 50, 20,  0,-10,
-             0, 20, 50, 20, 20, 50, 20,  0,
-            20, 50, 20,  0,  0, 20, 50, 20,
-            50, 20,  0,-10,-10,  0, 20, 50
-        },
-
-        //Rook
-        //Bonus on seventh/eight rank, bonus for castling squares
-        {
-            10, 10, 10, 10, 10, 10, 10, 10,
-            50, 50, 50, 50, 50, 50, 50, 50,
-             0,  0,  0, 10, 10,  0,  0,  0,
-             0,  0,  0, 10, 10,  0,  0,  0,
-             0,  0,  0, 10, 10,  0,  0,  0,
-             0,  0,  0, 10, 10,  0,  0,  0,
-             0,  0,  0, 10, 10,  0,  0,  0,
-             0,  0,  0, 30, 30, 30,  0,  0
-        },
-
-        //Queen
-        //Same as the bishops
-        {
-            50, 20,  0,-10,-10,  0, 20, 50,
-            20, 50, 20,  0,  0, 20, 50, 20,
-            0, 20, 50, 20, 20, 50, 20,  0,
-            -10,  0, 20, 50, 50, 20,  0,-10,
-            -10,  0, 20, 50, 50, 20,  0,-10,
-            0, 20, 50, 20, 20, 50, 20,  0,
-            20, 50, 20,  0,  0, 20, 50, 20,
-            50, 20,  0,-10,-10,  0, 20, 50
-        },
-
-        //King
-        //bonus on castling squares, edges of the board, any square where the king is safe basically
-        {
-            -50, -50, -50, -50, -50, -50, -50, -50,
-            -50, -50, -50, -50, -50, -50, -50, -50,
-            -50, -50, -50, -50, -50, -50, -50, -50,
-            -50, -50, -50, -50, -50, -50, -50, -50,
-            -50, -50, -50, -50, -50, -50, -50, -50,
-            -50, -50, -50, -50, -50, -50, -50, -50,
-             10,   0,   0,   0,   0,   0,   0,  10,
-             40,  30,  50, -10,   0, -10,  50,  40
-        },
-};
-
-//TODO endgame piece-square tables
-
-//Movements/Specifics
+#include <stack>
 
 /*
- * -17 -16 -15
- * -1   .   +1
- * +15 +16 +17
+ * Definition of useful types
  */
-const int PIECEMV[6][8] = {
-        //Sliding or not
-        {0, 0, 1, 1, 1, 0, 0, 0},
 
+typedef unsigned char BYTE;
+typedef unsigned int MOVEBITS;
+typedef unsigned long long POSITIONBITS;
+typedef unsigned short FLAG;
+
+/*
+ * Pieces constants
+ */
+
+const BYTE PAWN = 0;
+const BYTE KNIGHT = 1;
+const BYTE BISHOP = 2;
+const BYTE ROOK = 3;
+const BYTE QUEEN = 4;
+const BYTE KING = 5;
+
+const BYTE WHITE = 0;
+const BYTE BLACK = 1;
+
+const BYTE EMPTY = 6;
+const BYTE INV = 7;
+
+const FLAG QUIET = 0b0000;
+const FLAG DPAWNPUSH = 0b0001;
+const FLAG KCASTLE = 0b0010;
+const FLAG QCASTLE = 0b0011;
+const FLAG CAP = 0b0100;
+const FLAG EPCAP = 0b0101;
+const FLAG KNIGHTPROM = 0b1000;
+const FLAG BISHOPPROM = 0b1001;
+const FLAG ROOKPROM = 0b1010;
+const FLAG QUEENPROM = 0b1011;
+
+/*
+ * Piece move rules
+ */
+
+int pieceMv[6][8] = {
+        //Since we don't use the section that the paws would use, we can use it to indicate if the given pieces can slide or not
+        {false, false, true, true, true, false},
         //Knights
-        {17, -17, 15, -15, 10, -10, 6, -6},
-
+        {31, -31, 33, -33, 18, -18, 14, -14},
         //Bishops
-        {7, -7, 9, -9, 0, 0, 0, 0},
-
-        //Rooks
-        {1, -1, 8, -8, 0, 0, 0, 0},
-
-        //Queen
-        {7, -7, 9, -9, 1, -1, 8, -8},
-
-        //King
-        {7, -7, 9, -9, 1, -1, 8, -8},
-};
-
-const int PIECEMV88[6][8] = {
-        //Sliding or not
-        {0, 0, 1, 1, 1, 0, 0, 0},
-
-        //Knights
-        {33, -33, 31, -31, 18, -18, 14, -14},
-
-        //Bishops
-        {15, -15, 17, -17, 0, 0, 0, 0},
-
+        {15, 17, -15, -17, 0, 0, 0, 0},
         //Rooks
         {1, -1, 16, -16, 0, 0, 0, 0},
-
         //Queen
-        {15, -15, 17, -17, 1, -1, 16, -16},
-
+        {1, -1, 16, -16, 15, 17, -15, -17},
         //King
-        {15, -15, 17, -17, 1, -1, 16, -16}
+        {1, -1, 16, -16, 15, 17, -15, -17},
 };
 
-const bool isValid(int square){
-    return square < 64 && square >= 0;
+/*
+ * Useful conversion functions
+ */
+
+BYTE squareIndex(BYTE file, BYTE rank) {
+    return 16*rank + file;
+}
+BYTE fileIndex(BYTE square){
+    return square & 7;
+}
+BYTE rankIndex(BYTE square){
+    return square >> 4;
+}
+BYTE square8x8(BYTE square){
+    return (square + (square & 7)) >> 1;
+}
+BYTE square0x88(BYTE square){
+    return square + (square & ~7);
+}
+bool isInvalid(BYTE square){
+    return (square & 0x88) != 0;
 }
 
-//Couleurs
-const int WHITE = 0;
-const int BLACK = 1;
+/*
+ * Encoding/Decoding functions
+ */
 
-//Parsing human moves
-movebits humanMove(std::string writtenMove){
-    if(writtenMove.length() < 4 || writtenMove.length() > 5){
-        //Move is invalid
-        std::cout << "Please enter a move between 4 and 5 characters" << std::endl;
-        return 0;
-    }
-    int promote = QUIET;
-    std::string start = writtenMove.substr(0, 2);
-    std::string end = writtenMove.substr(2, 2);
-    if(writtenMove.length() == 5) promote = writtenMove[5] - '0';
-
-    int startSquare = (start[0] - 'a')%8;
-    int endSquare = (end[0] - 'a')%8;
-
-    startSquare += ((start[1] - '0') - 1)*8;
-    endSquare += ((end[1] - '0') - 1)*8;
-
-    std::cout << startSquare << std::endl;
-    std::cout << endSquare << std::endl;
-    return encodeMove(startSquare, endSquare, promote);
+//Encodes a move on 18bits (7bits * 2 for from-to info, and 4 bits for flags
+MOVEBITS encodeMove(BYTE from, BYTE to, BYTE flags){
+    return (from << 11) + (to << 4) + (flags);
 }
 
+BYTE fromSq(MOVEBITS move){ return (move & 0b111111100000000000) >> 11; }
+BYTE toSq(MOVEBITS move){ return (move & 0b000000011111110000) >> 4; }
+BYTE flag(MOVEBITS move){ return (move & 0b0000000000001111); }
 
+//Encodes a position on 64bits (18 bits for move made, 3bits for piece taken, 8bits for enPassant square, 4bits for castling and 7bits fifty move rule)
+POSITIONBITS encodePosition(MOVEBITS move, BYTE pieceTaken, BYTE enPassant, BYTE castling, int fifty){
+    return (move << 22) + (pieceTaken << 19) + (enPassant << 11) + (castling << 7) + fifty;
+}
+
+MOVEBITS movePlayed(POSITIONBITS position){ return (position & 0b1111111111111111110000000000000000000000) >> 22; }
+BYTE pieceToWakeFromTheDead(POSITIONBITS position){ return (position & 0b1110000000000000000000) >> 19; }
+BYTE enPassantLast(POSITIONBITS position){ return (position & 0b1111111100000000000) >> 11; }
+BYTE castling(POSITIONBITS position){ return (position & 0b11110000000) >> 7; }
+int fiftyClock(POSITIONBITS position){ return (position & 0b1111111); }
 
 #endif //BAUB_CHESS_CONSTANTS_H

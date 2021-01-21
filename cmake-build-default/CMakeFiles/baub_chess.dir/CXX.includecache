@@ -1,0 +1,30 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Board.h
+Constants.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
+utility
+-
+cmath
+-
+
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
+stack
+-
+iostream
+-
+stack
+-
+
+/home/bitterboyy/Documents/baub-chess/main.cpp
+iostream
+-
+ChessEngine/Board.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Board.h
+

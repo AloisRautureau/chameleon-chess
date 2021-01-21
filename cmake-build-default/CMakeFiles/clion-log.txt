@@ -1,0 +1,4 @@
+/opt/clion-2020.3.1/bin/cmake/linux/bin/cmake -G "CodeBlocks - Unix Makefiles" /home/bitterboyy/Documents/baub-chess
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/bitterboyy/Documents/baub-chess/cmake-build-default
