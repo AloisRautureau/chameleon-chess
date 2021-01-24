@@ -164,7 +164,7 @@ public:
                             }
                             else if(adress + 15 >= 0x70 && adress + 15 <= 0x77){ //Generate promotions
                                 for(int i = 0; i < 4; i++){
-                                    moveList[moveListIndx] = encodeMove(adress, adress+15, KNIGHTPROM+i);
+                                    moveList[moveListIndx] = encodeMove(adress, adress+15, KNIGHTPROM+i | CAP);
                                     moveListIndx++;
                                 }
                             }
@@ -181,7 +181,7 @@ public:
                             }
                             else if(adress + 17 >= 0x70 && adress + 17 <= 0x77){ //Generate promotions
                                 for(int i = 0; i < 4; i++){
-                                    moveList[moveListIndx] = encodeMove(adress, adress+17, KNIGHTPROM+i);
+                                    moveList[moveListIndx] = encodeMove(adress, adress+17, KNIGHTPROM+i | CAP);
                                     moveListIndx++;
                                 }
                             }
@@ -217,7 +217,7 @@ public:
                             }
                             else if(adress - 15 >= 0x00 && adress - 15 <= 0x07){ //Generate promotions
                                 for(int i = 0; i < 4; i++){
-                                    moveList[moveListIndx] = encodeMove(adress, adress-15, KNIGHTPROM+i);
+                                    moveList[moveListIndx] = encodeMove(adress, adress-15, KNIGHTPROM+i | CAP);
                                     moveListIndx++;
                                 }
                             }
@@ -234,7 +234,7 @@ public:
                             }
                             else if(adress - 17 >= 0x00 && adress - 17 <= 0x07){ //Generate promotions
                                 for(int i = 0; i < 4; i++){
-                                    moveList[moveListIndx] = encodeMove(adress, adress-17, KNIGHTPROM+i);
+                                    moveList[moveListIndx] = encodeMove(adress, adress-17, KNIGHTPROM+i | CAP);
                                     moveListIndx++;
                                 }
                             }
@@ -544,6 +544,7 @@ public:
 
         pieces[fromSq(move)] = pieces[toSq(move)];
         colors[fromSq(move)] = colors[toSq(move)];
+        pieces[toSq(move)] = EMPTY; colors[toSq(move)] = EMPTY;
         updatePieceList(sideToMove, toSq(move), fromSq(move), pieces[fromSq(move)], 0);
         
         if(flag(move) == EPCAP){
@@ -558,14 +559,10 @@ public:
                 updatePieceList(WHITE, INV, toSq(move) + 16, PAWN, 1);
             }
         }
-        else if(flag(move) == CAP){
+        else if((flag(move) & CAP) == CAP){
             pieces[toSq(move)] = pieceTaken;
             colors[toSq(move)] = sideToMove^1;
             updatePieceList(sideToMove^1, INV, toSq(move), pieceTaken, 1);
-        }
-        else {
-            pieces[toSq(move)] = EMPTY;
-            colors[toSq(move)] = EMPTY;
         }
 
 
@@ -663,7 +660,7 @@ public:
         int checks = 0; int* checksptr = &checks;
 
 
-        for(int i = 0; i < 10; i++){
+        for(int i = 0; i < 14; i++){
             *capsptr = 0;
             *epptr = 0;
             *castlesptr = 0;
