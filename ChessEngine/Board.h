@@ -924,7 +924,24 @@ public:
         }
     }
 
-    //std::string getFen(){}
+    //A symetric evaluation function (sideToMove is max)
+    int evaluation(){
+        //Considers pure material as well as piece-square value first
+        int material[2] = {0, 0};
+        int pcSq[2] = {0, 0};
+
+        for(int side = 0; side < 2; side++){
+            for(int pieceType = 0; pieceType < 6; pieceType++){
+                for(int piece = 0; piece < 10; piece++){
+                    if((side == WHITE ? whitePieces[pieceType][piece] : blackPieces[pieceType][piece]) == INV) break;
+                        material[side] += pieceValue[pieceType];
+                        pcSq[side] += pieceSquareTables[pieceType][side == WHITE ? invSquare8x8(whitePieces[pieceType][piece]) : square8x8(blackPieces[pieceType][piece])];
+                }
+            }
+        }
+
+        return pcSq[0] - pcSq[1];
+    }
 
 };
 
