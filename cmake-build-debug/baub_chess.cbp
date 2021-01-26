@@ -88,6 +88,9 @@
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h">
 			<Option target="baub_chess"/>
 		</Unit>
+		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Debug.h">
+			<Option target="baub_chess"/>
+		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Evaluation.h">
 			<Option target="baub_chess"/>
 		</Unit>

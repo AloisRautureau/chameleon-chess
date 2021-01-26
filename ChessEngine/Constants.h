@@ -8,6 +8,7 @@
 #include <stack>
 #include <iostream>
 #include <stack>
+#include <random>
 
 /*
  * Definition of useful types
@@ -187,7 +188,40 @@ int pieceSquareTables[6][64] = {
          -10,-20,-20,-20,-20,-20,-20,-10,
          20, 20,  0,  0,  0,  0, 20, 20,
          20, 30, 10,  0,  0, 10, 30, 20}
-
 };
+
+/*
+ * Zobrist hashing is used for a wide range of purposes : storing positions, evaluating pawn structure, etc
+ */
+typedef unsigned long long ZOBKEY;
+typedef unsigned long long ZOBHASH;
+ZOBKEY zobristKeys[781];
+
+const int WPAWNZOB = 0;
+const int WKNIGHTZOB = 64;
+const int WBISHOPZOB = 128;
+const int WROOKZOB = 192;
+const int WQUEENZOB = 256;
+const int WKINGZOB = 320;
+const int BPAWNZOB = 384;
+const int BKNIGHTZOB = 448;
+const int BBISHOPZOB = 512;
+const int BROOKZOB = 576;
+const int BQUEENZOB = 640;
+const int BKINGZOB = 704;
+const int SIDEZOB = 768;
+const int WKCASTLEZOB = 769;
+const int WQCASTLEZOB = 770;
+const int BKCASTLEZOB = 771;
+const int BQCASTLEZOB = 772;
+const int AEPZOB = 773;
+
+//We use a Mersenne Twister to generate the keys
+void initHash(){
+    std::mt19937_64 twister(time(nullptr));
+    for(int i = 0; i < 781; i++){
+        zobristKeys[i] = twister.operator()();
+    }
+}
 
 #endif //BAUB_CHESS_CONSTANTS_H

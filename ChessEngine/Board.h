@@ -96,6 +96,7 @@ private:
      */
     friend class Evaluation;
     friend class Search;
+    friend class Debug;
 
 
 
@@ -635,17 +636,24 @@ public:
         enPassant = enPassantLast(history.top());
         sideToMove ^= 1;
         ply--;
-
-        //Then unmake the main move
         MOVEBITS move = movePlayed(history.top());
         BYTE pieceTaken = pieceToWakeFromTheDead(history.top());
 
+        //Unpromote...
+        if((flag(move) & 0b1000) == 0b1000){
+            updatePieceList(sideToMove, toSq(move), INV, pieces[toSq(move)], 2); //Delete the piece in the promoted piece list
+            updatePieceList(sideToMove, INV, toSq(move), PAWN, 1); //Place the pawn in the pawn list
+            pieces[toSq(move)] = PAWN;
+        }
+
+        //Then unmake the main move
         pieces[fromSq(move)] = pieces[toSq(move)];
         colors[fromSq(move)] = colors[toSq(move)];
         pieces[toSq(move)] = EMPTY; colors[toSq(move)] = EMPTY;
         //std::cout << std::hex << "Putting back " << (int)pieces[fromSq(move)] << " from " << (int)toSq(move) << " to " << (int)fromSq(move) << std::dec <<std::endl;
         updatePieceList(sideToMove, toSq(move), fromSq(move), pieces[fromSq(move)], 0);
-        
+
+        //Replace a pawn if it was taken en passant
         if(flag(move) == EPCAP){
             if(sideToMove == WHITE){
                 pieces[toSq(move) - 16] = PAWN;
@@ -691,95 +699,10 @@ public:
             }
         }
 
-        //Promotion...
-        if((flag(move) & 0b1000) == 0b1000){
-            updatePieceList(sideToMove, fromSq(move), INV, pieces[fromSq(move)], 2);
-            updatePieceList(sideToMove, INV, fromSq(move), PAWN, 1);
-            pieces[fromSq(move)] = PAWN;
-        }
-
         history.pop();
     }
 
-    long long perft(int depth, int* caps, int* ep, int* castles, int* prom, int* checks)
-    {
-        long long nodes = 0;
-
-        if (depth == 0)
-            return 1ULL;
-
-        //Generate and copy moves
-        gen();
-        MOVEBITS stack[256];
-        int moves = 0;
-        for(int i = 0; i < moveListIndx; i++){
-            moves++;
-            stack[i] = moveList[i];
-        }
-
-        for (int i = 0; i < moves; i++) {
-            if(makeMove(stack[i])){
-
-                switch(flag(stack[i])){
-                    case CAP:
-                        *caps = *caps + 1;
-                        break;
-                    case EPCAP:
-                        *ep = *ep + 1;
-                        break;
-                    case KCASTLE:
-                    case QCASTLE:
-                        *castles = *castles + 1;
-                        break;
-                    case KNIGHTPROM:
-                    case BISHOPPROM:
-                    case ROOKPROM:
-                    case QUEENPROM:
-                        *prom = *prom + 1;
-                        break;
-                    default: break;
-                }
-
-                nodes += perft(depth - 1, caps, ep, castles, prom, checks);
-                unmake();
-            }
-            else *checks = *checks + 1;
-        }
-        return nodes;
-    }
-
-    //Calls perft for each depth layer and tests whether the values are right or not with display
-    void perftTest(){
-        std::cout << "##### PERFT TIME YAY !!! #####" << std::endl << std::endl;
-
-        int caps = 0; int* capsptr = &caps;
-        int ep = 0; int* epptr = &ep;
-        int castles = 0; int* castlesptr = &castles;
-        int prom = 0; int* promptr = &prom;
-        int checks = 0; int* checksptr = &checks;
-
-        for(int i = 0; i < 14; i++){
-            *capsptr = 0;
-            *epptr = 0;
-            *castlesptr = 0;
-            *promptr = 0;
-
-            auto startTime = std::chrono::high_resolution_clock::now();
-
-            long long nodes = perft(i, capsptr, epptr, castlesptr, promptr, checksptr);
-
-            auto endTime = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> diff =  endTime - startTime;
-
-            std::cout << "Nodes at depth " << i << " : " << nodes << " calculated in " << diff.count() << " seconds (" << nodes/(diff.count()) << " n/s)" << std::endl;
-            std::cout << "CAP : " << caps << "  EP : " << ep << "  CASTLES : " << castles << "  PROM : " << prom << "  CHECKS : " << checks << std::endl;
-            std::cout << std::endl;
-        }
-
-        delete capsptr, epptr, castlesptr, promptr;
-    }
-
-    void showBoard(bool flip = false){
+    void showBoard(bool flip = false, bool verbose = false){
         std::cout << (sideToMove == WHITE ? "White " : "Black ") << "to move" << std::endl;
         for(int i = 0; i < 0x80; i++){
             int adress = fileIndex(i) + (7-rankIndex(i))*16;
@@ -822,25 +745,27 @@ public:
         }
         std::cout << std::endl << std::endl << "Current ply : " << ply << std::endl;
 
-        std::cout << "Piece list situation :" << std::endl;
-        std::cout << "White : ";
-        for(int i = 0; i < 6; i++){
-            std::cout << std::endl << pieceNames[i] << " : ";
-            for(int j = 0; j < 10; j++){
-                if(whitePieces[i][j] == INV) break;
-                std::cout <<std::hex << (int)whitePieces[i][j] << ", ";
+        if(verbose){
+            std::cout << "Piece list situation :" << std::endl;
+            std::cout << "White : ";
+            for(int i = 0; i < 6; i++){
+                std::cout << std::endl << pieceNames[i] << " : ";
+                for(int j = 0; j < 10; j++){
+                    if(whitePieces[i][j] == INV) break;
+                    std::cout <<std::hex << (int)whitePieces[i][j] << ", ";
+                }
             }
-        }
-        std::cout << std::endl << "Black : ";
-        for(int i = 0; i < 6; i++){
-            std::cout << std::endl << pieceNames[i] << " : ";
-            for(int j = 0; j < 10; j++){
-                if(blackPieces[i][j] == INV) break;
-                std::cout <<std::hex << (int)blackPieces[i][j] << ", ";
+            std::cout << std::endl << "Black : ";
+            for(int i = 0; i < 6; i++){
+                std::cout << std::endl << pieceNames[i] << " : ";
+                for(int j = 0; j < 10; j++){
+                    if(blackPieces[i][j] == INV) break;
+                    std::cout <<std::hex << (int)blackPieces[i][j] << ", ";
+                }
             }
+            std::cout << "En passant square : " << (int)enPassant << std::endl;
+            std::cout << std::dec;
         }
-        std::cout << "En passant square : " << (int)enPassant << std::endl;
-        std::cout << std::dec;
     }
 
 
@@ -1031,6 +956,57 @@ public:
 
             fifty = fen[charIndex] - '0';
         }
+    }
+
+    //Returns the current position's hash value
+    ZOBHASH getPositionHash() const{
+        ZOBHASH hash = 0xffffffffffffffff;
+        for(int side = 0; side < 2; side++){
+            for(int pieceType = 0; pieceType < 6; pieceType++){
+                for(int piece = 0; piece < 10; piece++){
+                    switch(pieceType){
+                        case PAWN:
+                            hash ^= (side == WHITE ? zobristKeys[WPAWNZOB + square8x8(piece)] : zobristKeys[BPAWNZOB + square8x8(piece)]);
+                            break;
+
+                        case KNIGHT:
+                            hash ^= (side == WHITE ? zobristKeys[WKNIGHTZOB + square8x8(piece)] : zobristKeys[BKNIGHTZOB + square8x8(piece)]);
+                            break;
+
+                        case BISHOP:
+                            hash ^= (side == WHITE ? zobristKeys[WBISHOPZOB + square8x8(piece)] : zobristKeys[BBISHOPZOB + square8x8(piece)]);
+                            break;
+
+                        case ROOK:
+                            hash ^= (side == WHITE ? zobristKeys[WROOKZOB + square8x8(piece)] : zobristKeys[BROOKZOB + square8x8(piece)]);
+                            break;
+
+                        case QUEEN:
+                            hash ^= (side == WHITE ? zobristKeys[WQUEENZOB + square8x8(piece)] : zobristKeys[BQUEENZOB + square8x8(piece)]);
+                            break;
+
+                        case KING:
+                            hash ^= (side == WHITE ? zobristKeys[WKINGZOB + square8x8(piece)] : zobristKeys[BKINGZOB + square8x8(piece)]);
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        if(sideToMove == BLACK) hash ^= zobristKeys[SIDEZOB];
+
+        if(castlingRights & 0b1000) hash ^= zobristKeys[WKCASTLEZOB];
+        if(castlingRights & 0b0100) hash ^= zobristKeys[WQCASTLEZOB];
+        if(castlingRights & 0b0010) hash ^= zobristKeys[BKCASTLEZOB];
+        if(castlingRights & 0b0001) hash ^= zobristKeys[BQCASTLEZOB];
+
+        if(enPassant != INV){
+            hash ^= zobristKeys[AEPZOB + fileIndex(enPassant)];
+        }
+
+        return hash;
     }
 };
 

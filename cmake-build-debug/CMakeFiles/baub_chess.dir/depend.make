@@ -3,6 +3,7 @@
 
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/Board.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/Constants.h
+CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/Debug.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/Evaluation.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/Search.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../main.cpp
