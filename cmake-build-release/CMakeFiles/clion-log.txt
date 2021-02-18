@@ -1,4 +1,0 @@
-/snap/clion/137/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Release -G "CodeBlocks - Unix Makefiles" /home/bitterboyy/Documents/baub_chess
--- Configuring done
--- Generating done
--- Build files have been written to: /home/bitterboyy/Documents/baub_chess/cmake-build-release

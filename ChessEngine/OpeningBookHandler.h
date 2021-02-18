@@ -44,21 +44,36 @@ struct bookEntry {
 class BookHandler{
 private:
     std::string pathToBook;
+    std::fstream bookFile;
 
     //The book handler loads the whole book in memory to ease up management
     //Sure, it's kinda slow and certinely not optimized, but since book generation will likely be a one time occurence,
     //execution speed is not a primary concern. Correctness, on the other hand, is.
     bookEntry openingBook[100000];
+    int maxEntry = -1;
 
 public:
     explicit BookHandler(std::string path): pathToBook(std::move(path)){
-        int i = 0;
-        std::ifstream book(pathToBook);
-        while(!book.eof()){
-                openingBook[i] = readEntry(i);
+        bookFile.open(pathToBook, std::ios::binary);
+        if(!bookFile){
+            std::cout << "Erreur lors de l'ouverture du fichier " + path << std::endl;
         }
-        book.close();
+        int i = 0;
+        while(openingBook[i-1].move != 0){
+                openingBook[i] = readEntry(i, true);
+		        maxEntry++;
+		        i++;
+        }
+        //We need at least an entry point, so openingBook[0] will always be e4 if it isn't found
+        bookEntry e4 = {29217, 1, 1, 0, 0, 0, 1, -1};
+        if(openingBook[0].move != e4.move){
+            openingBook[0] = e4;
+        }
     };
+
+    ~BookHandler(){
+        bookFile.close();
+    }
 
     //CLI interface to interact with the book, modifying, adding, generating, deleting line, etc etc
     int openingBookWizard(){
@@ -107,48 +122,120 @@ public:
     }
 
     //Reads the entry at the given index in the book
-    bookEntry readEntry(int index){
+    bookEntry readEntry(int index, bool init = false){
         //First we need to open the file
-        std::ifstream bookFile;
-        bookFile.open(pathToBook, std::ios::binary);
         //It will open the file from the root index (index 0), which is e4 since it is the most common first move
         //A memory block size will be 256bits here (one memory block = 1 book entry)
-        bookEntry bookMove{};
+        bookEntry bookMove{0};
         char* buffer = (char*) &bookMove;
 
-        if(!bookFile){
-            std::cout << "The book file could not be read" << std::endl;
+        //Placing the head on the entry we want to read
+        //bookFileIn.clear();
+        bookFile.seekg(sizeof(bookEntry)*index);
+        if(bookFile.eof()){
             return bookMove;
         }
-
-        //Placing the head on the entry we want to read
-        bookFile.seekg(sizeof(bookEntry)*index);
         bookFile.read(buffer, sizeof(bookEntry));
 
         //delete[] buffer;
+        bookFile.clear();
         return bookMove;
     }
 
     //Writes the given entry at the current index in the book
     void writeEntry(int index, bookEntry entry){
         //Same thing but here we need to write
-        std::ofstream bookFile;
-        bookFile.open(pathToBook, std::ios::binary);
         char* buffer = (char*) &entry;
-
-        if(!bookFile){
-            std::cout << "The book file could not be read" << std::endl;
-            return;
-        }
 
         //Placing the head on the entry we want to read
         bookFile.seekp(sizeof(bookEntry)*index);
         bookFile.write(buffer, sizeof(bookEntry));
 
         //delete[] buffer;
+        bookFile.clear();
     }
 
-};
+    void setNextMove(bookEntry move, int nextMoveIndex) {
+        int index = 0;
+        //We start by going to the right ply in order to search the move to set
+        for(int i = 0; i < move.ply; i++){
+            index = openingBook[index].nextMove;
+        }
 
+        //We now search for the move
+        while(openingBook[index].nextSibling != -1 && openingBook[index].move != move.move){
+            index = openingBook[index].nextSibling;
+        }
+
+        //if the move exists we can now set it's nextMove variable
+        if(openingBook[index].move == move.move){
+            openingBook[index].nextMove = nextMoveIndex;
+        }
+    }
+
+    void setNextsibling(bookEntry move, int nextSiblingIndex) {
+        int index = 0;
+        //We start by going to the right ply in order to search the move to set
+        for(int i = 0; i < move.ply; i++){
+            index = openingBook[index].nextMove;
+        }
+
+        //We now search for the move
+        while(openingBook[index].nextSibling != -1 && openingBook[index].move != move.move){
+            index = openingBook[index].nextSibling;
+        }
+
+        //if the move exists we can now set it's nextMove variable
+        if(openingBook[index].move == move.move){
+            openingBook[index].nextMove = nextSiblingIndex;
+        }
+    }
+
+    //Adds a new line to the book
+    void addLine(const std::vector<bookEntry>& line) {
+        //we repeat for each move present in the given line
+        for(int entry = 0; entry < line.size(); entry++){
+            int index = 0;
+            //Start by going to the right ply
+            for(int i = 0; i < line[entry].ply; i++){
+                //There is always a case where we add a move deeper than the current max ply
+                index = openingBook[index].nextMove;
+            }
+
+            //We check whether or not the current move exists
+            while(openingBook[index].nextSibling != -1 && openingBook[index].move != line[entry].move){
+                index = openingBook[index].nextSibling;
+            }
+
+            //if the move already exists, we just have to set the nextMove variable of the last move in the line
+            if(openingBook[index].move == line[entry].move){
+                if(entry > 0){
+                    setNextMove(line[entry-1], index);
+                }
+            }
+
+            //If the move doesn't exist, we need to add it at the end of the array, and then add it as the nextSibling of last entry
+            else{
+                maxEntry++;
+                openingBook[maxEntry] = line[entry];
+                setNextsibling(openingBook[index], maxEntry);
+            }
+        }
+    }
+
+    void saveBook(){
+        for(int i = 0; i <= maxEntry; i++){
+            writeEntry(i, openingBook[i]);
+        }
+        std::cout << "Succesfully saved the book !" << std::endl;
+    }
+
+    //Debugging function only
+    void printBook(){
+        for(int i = 0; i <= maxEntry; i++){
+            std::cout << openingBook[i].move << std::endl;
+        }
+    }
+};
 
 #endif //BAUB_CHESS_OPENINGBOOKHANDLER_H
