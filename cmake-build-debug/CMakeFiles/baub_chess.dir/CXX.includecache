@@ -7,25 +7,13 @@
 #IncludeRegexTransform: 
 
 /home/bitterboyy/Documents/baub-chess/ChessEngine/Board.h
-Constants.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
+Utility.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Utility.h
 utility
 -
 cmath
 -
 chrono
--
-
-/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
-stack
--
-iostream
--
-stack
--
-random
--
-sstream
 -
 
 /home/bitterboyy/Documents/baub-chess/ChessEngine/Debug.h
@@ -45,12 +33,24 @@ fstream
 -
 utility
 -
-Constants.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h
+Utility.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Utility.h
 
 /home/bitterboyy/Documents/baub-chess/ChessEngine/Search.h
 Evaluation.h
 /home/bitterboyy/Documents/baub-chess/ChessEngine/Evaluation.h
+
+/home/bitterboyy/Documents/baub-chess/ChessEngine/Utility.h
+stack
+-
+iostream
+-
+stack
+-
+random
+-
+sstream
+-
 
 /home/bitterboyy/Documents/baub-chess/main.cpp
 iostream

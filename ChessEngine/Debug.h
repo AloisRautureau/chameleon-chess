@@ -214,7 +214,7 @@ public:
                     break;
 
                 case search:
-                    std::cout << "The engine found the best move to be " << debug_search.searchBestMove() << std::endl;
+                    std::cout << "The engine found the best move to be " << debug_search.searchBestMove(5) << std::endl;
                     break;
 
                 case eval:

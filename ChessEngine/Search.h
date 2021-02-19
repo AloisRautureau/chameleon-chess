@@ -20,15 +20,40 @@ private:
     Board& board;
     Evaluation eval;
     transpositionTable tTable;
-    const int depth;
+    int depth = 1;
+    int max_depth;
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> startTime;
+    double searchTime = 0;
+    bool timeElapsed = false;
 
 public:
-    Search(Board& board, Evaluation eval, int depth): board(board), depth(depth), eval(eval){
+    Search(Board& board, Evaluation eval, int depth): board(board), max_depth(depth), eval(eval){
         initTable(tTable);
     }
 
+    MOVEBITS searchBestMove(double maxTime){
+        //This is where we implement iterative deepening
+        //The search gets a limited time where it searches deeper and deeper, until the time is elapsed.
+        //It then returns the last move it has found!
+        searchTime = maxTime;
+        timeElapsed = false;
+        MOVEBITS moveFound = 0;
+        startTime = std::chrono::high_resolution_clock::now();
+
+        for(depth; depth < max_depth && !timeElapsed; depth++){
+            moveFound = searchRootNode();
+
+            auto endTime = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff =  endTime - startTime;
+            timeElapsed = (diff.count() >= searchTime);
+        }
+
+        depth = 1;
+        return moveFound;
+    }
+
     //Seaches the root node, calls searchNode recursively to get a score for each move, and returns the best move based on score
-    MOVEBITS searchBestMove(){
+    MOVEBITS searchRootNode(){
         int bestScore = -999999;
         MOVEBITS bestMove;
 
@@ -53,6 +78,11 @@ public:
                     bestMove = moveStack[move];
                     bestScore = score;
                 }
+
+                auto endTime = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> diff =  endTime - startTime;
+                timeElapsed = (diff.count() >= searchTime);
+                if(timeElapsed) return bestMove;
             }
         }
         return bestMove;
@@ -61,6 +91,11 @@ public:
     //Searches a node and gives back a score to said node
     int searchNode(int alpha, int beta, int currentDepth){
         if(currentDepth == depth) return quiescence(alpha, beta);
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff =  endTime - startTime;
+        timeElapsed = (diff.count() >= searchTime);
+        if(timeElapsed) return quiescence(alpha, beta);
 
         int moveStackIndx = 0;
         MOVEBITS moveStack[256];
@@ -73,6 +108,15 @@ public:
 
         sortMoves(moveStack, moveStackIndx);
 
+        ZOBHASH hash = board.getPositionHash();
+        int tTableIndex = getTableIndex(hash);
+        //We must first check if the current node is a transposition
+        if(tTable.hashTable[tTableIndex] == hash){
+            //If it's the case, we put this move as the first one to check in hopes to cause a cutoff
+            //if the move isn't found, it was most likely illegal, this can happen in case of a key-collision
+            moveToTop(moveStack, moveStackIndx, tTable.bestMoveTable[tTableIndex]);
+        }
+
         //That's a checkmate or a stalemate
         if(moveStackIndx == 0) return 0;
 
@@ -81,8 +125,15 @@ public:
                 int score = -searchNode(-beta, -alpha, currentDepth+1);
                 board.unmake();
 
-                if(score >= beta) return beta;
-                if(score > alpha) alpha = score;
+                if(score >= beta){
+                    //If the search causes a cutoff, we add it to the transposition table
+                    storePosition(tTable, hash, moveStack[i], currentDepth, score, LOWER);
+                    return beta;
+                }
+                if(score > alpha){
+                    storePosition(tTable, hash, moveStack[i], currentDepth, score, UPPER);
+                    alpha = score;
+                }
             }
         }
         return alpha;
@@ -93,6 +144,11 @@ public:
         if(standPat >= beta) return beta;
         if(standPat < alpha - 900) return alpha;
         if(standPat > alpha) alpha = standPat;
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff =  endTime - startTime;
+        timeElapsed = (diff.count() >= searchTime);
+        if(timeElapsed) return standPat;
 
         int moveStackIndx = 0;
         MOVEBITS moveStack[256];
@@ -132,6 +188,19 @@ public:
                         }
                         moveStack[prec+1] = key;
                 }
+        }
+    }
+
+    static void moveToTop(MOVEBITS moveStack[], int moveStackIndx, MOVEBITS move){
+        for(int i = 0; i < moveStackIndx; i++){
+            if(moveStack[i] == move){
+                //Move all the elements one to the right and insert the move at the beginning
+                for(int j = i; j > 0; j--){
+                    MOVEBITS swap = moveStack[j];
+                    moveStack[j] = moveStack[j-1];
+                    moveStack[j-1] = swap;
+                }
+            }
         }
     }
 
