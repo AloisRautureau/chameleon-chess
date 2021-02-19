@@ -8,7 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <utility>
-#include "Constants.h"
+#include "Utility.h"
 
 /*
  * A completely separate program from the main chess engine, used to manage the opening book

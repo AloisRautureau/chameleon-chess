@@ -2,8 +2,8 @@
 // Created by bitterboyy on 1/16/21.
 //
 
-#ifndef BAUB_CHESS_CONSTANTS_H
-#define BAUB_CHESS_CONSTANTS_H
+#ifndef BAUB_CHESS_UTILITY_H
+#define BAUB_CHESS_UTILITY_H
 
 #include <stack>
 #include <iostream>
@@ -225,6 +225,54 @@ void initHash(){
     }
 }
 
+struct transpositionTable{
+    ZOBHASH hashTable[1024];
+    MOVEBITS bestMoveTable[1024];
+    int depthTable[1024];
+    int scoreTable[1024];
+    char nodeTypeTable[1024];
+};
+const char EXACT = 0;
+const char UPPER = 1;
+const char LOWER = 2;
+
+int getTableIndex(ZOBHASH hash){
+    return hash%1024;
+}
+
+void initTable(transpositionTable table){
+    for(int i = 0; i < 1024; i++){
+        table.hashTable[i] = 0;
+        table.bestMoveTable[i] = 0;
+        table.depthTable[i] = 0;
+        table.scoreTable[i] = 0;
+        table.nodeTypeTable[i] = 0;
+    }
+}
+
+int storePosition(transpositionTable table, ZOBHASH hash, MOVEBITS bestMove, int depth, int score, char nodeType){
+    int index = getTableIndex(hash);
+    if(table.depthTable[index] <= depth){
+        table.hashTable[index] = hash;
+        table.bestMoveTable[index] = bestMove;
+        table.depthTable[index] = depth;
+        table.scoreTable[index] = score;
+        table.nodeTypeTable[index] = nodeType;
+
+        return index;
+    }
+
+    else return -1;
+}
+
+MOVEBITS getBestMove(transpositionTable table, ZOBHASH hash){
+    int index = getTableIndex(hash);
+    if(table.hashTable[index] == hash){
+        return table.bestMoveTable[index];
+    }
+    else return 0;
+}
+
 
 /*
  * Utility functions
@@ -241,4 +289,4 @@ std::vector<std::string> split(const std::string& s, char delimiter)
     return substrings;
 }
 
-#endif //BAUB_CHESS_CONSTANTS_H
+#endif //BAUB_CHESS_UTILITY_H

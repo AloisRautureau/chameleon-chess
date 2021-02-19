@@ -19,10 +19,13 @@ private:
      */
     Board& board;
     Evaluation eval;
+    transpositionTable tTable;
     const int depth;
 
 public:
-    Search(Board& board, Evaluation eval, int depth): board(board), depth(depth), eval(eval){}
+    Search(Board& board, Evaluation eval, int depth): board(board), depth(depth), eval(eval){
+        initTable(tTable);
+    }
 
     //Seaches the root node, calls searchNode recursively to get a score for each move, and returns the best move based on score
     MOVEBITS searchBestMove(){
@@ -88,6 +91,7 @@ public:
     int quiescence(int alpha, int beta){
         int standPat = eval.evaluation();
         if(standPat >= beta) return beta;
+        if(standPat < alpha - 900) return alpha;
         if(standPat > alpha) alpha = standPat;
 
         int moveStackIndx = 0;
@@ -117,7 +121,7 @@ public:
     }
 
     //Sorts a given movestack, castling is prioritized, then captures come close then lastly quiet moves don't get any sort of bonus
-    void sortMoves(MOVEBITS moveStack[], int moveStackIndex){
+    static void sortMoves(MOVEBITS moveStack[], int moveStackIndex){
         for(int i = 1; i < moveStackIndex; i++){
                 MOVEBITS key = moveStack[i];
                 if(flag(key) > flag(moveStack[i-1])){

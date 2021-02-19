@@ -5,7 +5,7 @@
 #ifndef BAUB_CHESS_BOARD_H
 #define BAUB_CHESS_BOARD_H
 
-#include "Constants.h"
+#include "Utility.h"
 #include <utility>
 #include <cmath>
 #include <chrono>

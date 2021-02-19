@@ -85,9 +85,6 @@
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Board.h">
 			<Option target="baub_chess"/>
 		</Unit>
-		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Constants.h">
-			<Option target="baub_chess"/>
-		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Debug.h">
 			<Option target="baub_chess"/>
 		</Unit>
@@ -98,6 +95,9 @@
 			<Option target="baub_chess"/>
 		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Search.h">
+			<Option target="baub_chess"/>
+		</Unit>
+		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/Utility.h">
 			<Option target="baub_chess"/>
 		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/main.cpp">
