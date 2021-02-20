@@ -20,15 +20,14 @@ private:
     Board& board;
     Evaluation eval;
     transpositionTable tTable;
-    int depth = 1;
     int max_depth;
     std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> startTime;
     double searchTime = 0;
     bool timeElapsed = false;
+    std::vector<MOVEBITS> principalVariation;
 
 public:
     Search(Board& board, Evaluation eval, int depth): board(board), max_depth(depth), eval(eval){
-        initTable(tTable);
     }
 
     MOVEBITS searchBestMove(double maxTime){
@@ -40,21 +39,22 @@ public:
         MOVEBITS moveFound = 0;
         startTime = std::chrono::high_resolution_clock::now();
 
-        for(depth; depth < max_depth && !timeElapsed; depth++){
-            moveFound = searchRootNode();
+        for(int depth = 0; depth < max_depth && !timeElapsed; depth++){
+            MOVEBITS checking = searchRootNode(depth);
 
             auto endTime = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> diff =  endTime - startTime;
             timeElapsed = (diff.count() >= searchTime);
+             if(!timeElapsed) moveFound = checking;
         }
 
-        depth = 1;
         return moveFound;
     }
 
     //Seaches the root node, calls searchNode recursively to get a score for each move, and returns the best move based on score
-    MOVEBITS searchRootNode(){
-        int bestScore = -999999;
+    MOVEBITS searchRootNode(int depth){
+        int alpha = -999999;
+        int beta = 99999;
         MOVEBITS bestMove;
 
         int moveStackIndx = 0;
@@ -66,17 +66,40 @@ public:
             moveStack[i] = board.moveList[i];
         }
 
+        sortMoves(moveStack, moveStackIndx);
+
+        ZOBHASH hash = board.getPositionHash();
+        int tTableIndex = tTable.getTableIndex(hash);
+        //We must first check if the current node is a transposition
+        if(tTable.hashTable[tTableIndex] == hash){
+            //If it's the case, we put this move as the first one to check in hopes to cause a cutoff
+            //if the move isn't found, it was most likely illegal, this can happen in case of a key-collision
+            moveToTop(moveStack, moveStackIndx, tTable.bestMoveTable[tTableIndex]);
+        }
+
         //That's a checkmate or a stalemate
         if(moveStackIndx == 0) return 0;
 
         for(int move = 0; move < moveStackIndx; move++){
             if(board.makeMove(moveStack[move])){
-                int score = searchNode(-99999, 99999, 1);
+                int score = searchNode(alpha, beta, depth);
                 board.unmake();
 
-                if(score > bestScore){
+                if(score >= beta){
+                    //If the search causes a cutoff, we add it to the transposition table
+                    tTable.storePosition(hash, moveStack[move], depth, score, tTable.LOWER);
+                    continue;
+                }
+
+                if(score > alpha){
+                    tTable.storePosition(hash, moveStack[move], depth, score, tTable.UPPER);
+
                     bestMove = moveStack[move];
-                    bestScore = score;
+                    alpha = score;
+                }
+
+                if(score < alpha && score > beta){
+                    tTable.storePosition(hash, moveStack[move], depth, score, tTable.EXACT);
                 }
 
                 auto endTime = std::chrono::high_resolution_clock::now();
@@ -85,12 +108,13 @@ public:
                 if(timeElapsed) return bestMove;
             }
         }
+        std::cout << "Best move found at depth " << depth << " : " << bestMove << " with a score of " << alpha << std::endl;
         return bestMove;
     }
 
     //Searches a node and gives back a score to said node
-    int searchNode(int alpha, int beta, int currentDepth){
-        if(currentDepth == depth) return quiescence(alpha, beta);
+    int searchNode(int alpha, int beta, int depth){
+        if(depth == 0) return quiescence(alpha, beta);
 
         auto endTime = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff =  endTime - startTime;
@@ -109,7 +133,7 @@ public:
         sortMoves(moveStack, moveStackIndx);
 
         ZOBHASH hash = board.getPositionHash();
-        int tTableIndex = getTableIndex(hash);
+        int tTableIndex = tTable.getTableIndex(hash);
         //We must first check if the current node is a transposition
         if(tTable.hashTable[tTableIndex] == hash){
             //If it's the case, we put this move as the first one to check in hopes to cause a cutoff
@@ -122,17 +146,20 @@ public:
 
         for(int i = 0; i < moveStackIndx; i++){
             if(board.makeMove(moveStack[i])){
-                int score = -searchNode(-beta, -alpha, currentDepth+1);
+                int score = -searchNode(-beta, -alpha, depth-1);
                 board.unmake();
 
                 if(score >= beta){
                     //If the search causes a cutoff, we add it to the transposition table
-                    storePosition(tTable, hash, moveStack[i], currentDepth, score, LOWER);
+                    tTable.storePosition(hash, moveStack[i], depth, score, tTable.LOWER);
                     return beta;
                 }
                 if(score > alpha){
-                    storePosition(tTable, hash, moveStack[i], currentDepth, score, UPPER);
+                    tTable.storePosition(hash, moveStack[i], depth, score, tTable.UPPER);
                     alpha = score;
+                }
+                if(score < alpha && score > beta){
+                    tTable.storePosition(hash, moveStack[i], depth, score, tTable.EXACT);
                 }
             }
         }
@@ -202,6 +229,18 @@ public:
                 }
             }
         }
+    }
+
+    void collectPV(ZOBHASH hash){
+        //Goes from the root position hash, then makes the best move, searches the new hash, etc
+        if(tTable.getBestMove(hash) == 0 || principalVariation.size() > 10 || tTable.hashTable[tTable.getTableIndex(hash)] != hash) return;
+
+        principalVariation.push_back(tTable.getBestMove(hash));
+        board.makeMove(tTable.getBestMove(hash));
+        std::cout << "Played the move " << tTable.getBestMove(hash) << std::endl;
+        board.showBoard();
+        collectPV(board.getPositionHash());
+        board.unmake();
     }
 
 

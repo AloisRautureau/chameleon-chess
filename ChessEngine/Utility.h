@@ -225,54 +225,52 @@ void initHash(){
     }
 }
 
-struct transpositionTable{
-    ZOBHASH hashTable[1024];
-    MOVEBITS bestMoveTable[1024];
-    int depthTable[1024];
-    int scoreTable[1024];
-    char nodeTypeTable[1024];
+class transpositionTable{
+public:
+    ZOBHASH hashTable[1024] = {0};
+    MOVEBITS bestMoveTable[1024] = {0};
+    int depthTable[1024] = {0};
+    int scoreTable[1024] = {0};
+    char nodeTypeTable[1024] = {0};
+    const char EXACT = 0;
+    const char UPPER = 1;
+    const char LOWER = 2;
+
+    int getTableIndex(ZOBHASH hash){
+        return hash%1024;
+    }
+
+    int storePosition(ZOBHASH hash, MOVEBITS bestMove, int depth, int score, char nodeType){
+        int index = getTableIndex(hash);
+
+        if(depthTable[index] <= depth || nodeTypeTable[index] >= nodeType){
+            hashTable[index] = hash;
+            bestMoveTable[index] = bestMove;
+            depthTable[index] = depth;
+            scoreTable[index] = score;
+            nodeTypeTable[index] = nodeType;
+            return index;
+        }
+
+        else return -1;
+    }
+
+    MOVEBITS getBestMove(ZOBHASH hash){
+        int index = getTableIndex(hash);
+        if(hashTable[index] == hash){
+            return bestMoveTable[index];
+        }
+        else return 0;
+    }
+
+    void printTable(int index){
+        std::cout << std::endl << "index  hash      nodeType     bestMove" << std::endl;
+        if(hashTable[index] == 0) std::cout << "  " << index << "  empty" << std::endl;
+        else{
+            std::cout << "  " << index << "  " << hashTable[index] << " " << (int)nodeTypeTable[index] << " " << (int)bestMoveTable[index] << std::endl;
+        }
+    }
 };
-const char EXACT = 0;
-const char UPPER = 1;
-const char LOWER = 2;
-
-int getTableIndex(ZOBHASH hash){
-    return hash%1024;
-}
-
-void initTable(transpositionTable table){
-    for(int i = 0; i < 1024; i++){
-        table.hashTable[i] = 0;
-        table.bestMoveTable[i] = 0;
-        table.depthTable[i] = 0;
-        table.scoreTable[i] = 0;
-        table.nodeTypeTable[i] = 0;
-    }
-}
-
-int storePosition(transpositionTable table, ZOBHASH hash, MOVEBITS bestMove, int depth, int score, char nodeType){
-    int index = getTableIndex(hash);
-    if(table.depthTable[index] <= depth){
-        table.hashTable[index] = hash;
-        table.bestMoveTable[index] = bestMove;
-        table.depthTable[index] = depth;
-        table.scoreTable[index] = score;
-        table.nodeTypeTable[index] = nodeType;
-
-        return index;
-    }
-
-    else return -1;
-}
-
-MOVEBITS getBestMove(transpositionTable table, ZOBHASH hash){
-    int index = getTableIndex(hash);
-    if(table.hashTable[index] == hash){
-        return table.bestMoveTable[index];
-    }
-    else return 0;
-}
-
 
 /*
  * Utility functions

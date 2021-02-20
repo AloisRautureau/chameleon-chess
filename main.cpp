@@ -82,21 +82,6 @@ void debugMenu(Debug& debug, Board& board){
 }
 
 int main() {
-    //Test for book handler
-    BookHandler openingBook("openingBook.bin");
-
-    bookEntry e4 = {29217, 1, 1, 0, 0, 0, 1, -1};
-    bookEntry c5 = {127649, 1, 1, 0, 0, 1, -1, -1};
-    bookEntry f3 = {12688, 1, 1, 0, 0, 2, -1, -1};
-    std::vector<bookEntry> defaultScicillian = {e4, c5, f3};
-    openingBook.addLine(defaultScicillian);
-    openingBook.printBook();
-
-    openingBook.saveBook();
-
-    //bookEntry testRead = openingBook.readEntry(0);
-    //std::cout << testRead.move << " " << testRead.nextSibling << std::endl;
-
     //Always initialize the zobrist keys
     initHash();
 
@@ -112,7 +97,7 @@ int main() {
 
     Board board;
     Evaluation eval(board);
-    Search search(board, eval, 20);
+    Search search(board, eval, 12);
     Debug debugger(board, search, eval);
     std::cout << "Initial position board initialized..." << std::endl << std::endl;
 
@@ -140,7 +125,7 @@ int main() {
                 exit(0);
 
             default:
-                std::cout << "Please enter a valide option..." << std::endl << std::endl;
+                std::cout << "Please enter a valid option..." << std::endl << std::endl;
         }
     }
     //Search search(board, Evaluation(board), 5);
