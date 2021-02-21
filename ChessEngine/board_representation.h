@@ -167,7 +167,7 @@ private:
             }
     };
 
-    int pieceMoves[6][8] = {
+    int m_pieceMoves[6][8] = {
             //Pawn moves aren't in here, so we use their space to signify if a piece can slide or not
             {false, false, true, true, true, false, false, false},
             //Knights
@@ -185,6 +185,9 @@ private:
     //Variables used to keep track of the game state
     bool m_sideToMove = WHITE;
     char m_castlingRights = 0b1111;
+    int m_halfclock = 0;
+    int m_ply = 0;
+    sq m_ep = a1;
 
     //Move list is a 256 entry array
     movebits m_moveStack[256] = {0};
@@ -199,11 +202,11 @@ public:
 
     //Checks if the given square is under attack by the given side
     bool sqAttacked(int sq, bool side);
+    //A small variant on the sqAttacked function
+    bool inCheck(bool side);
 
     //Encodes a move on 16bits
-    static movebits encodeMove(sq from, sq to, flag flag){
-        return (flag << 12) + (((to + (to & 7)) >> 1) << 6) + ((from + (from & 7)) >> 1);
-    }
+    static movebits encodeMove(sq from, sq to, flag flag);
 
     //Decoding move functions
     static sq fromSq(movebits move);
@@ -215,10 +218,7 @@ public:
      * Careful tho, it doesn't really check whether or not the move is legal. If you tell the make function to move a bishop
      * from a1 to b1, it will make the move.
      */
-    bool make(movebits move){
-        //First we need to update the state variables
-        if()
-    }
+    bool make(movebits move);
 
 };
 
