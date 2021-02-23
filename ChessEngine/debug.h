@@ -6,11 +6,12 @@
 #define BAUB_CHESS_DEBUG_H
 
 #include "board_representation.h"
+#include "display.h"
 
 class debug {
 public:
-    unsigned long long perftRecursive(int depth, board_representation board);
-    void perft(const board_representation &board);
+    static unsigned long long perftRecursive(int depth, board_representation board);
+    static void perft(const board_representation &board);
 };
 
 

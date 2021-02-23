@@ -4,11 +4,17 @@
 CMakeFiles/baub_chess.dir/ChessEngine/board_representation.cpp.o
  /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.cpp
  /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
+CMakeFiles/baub_chess.dir/ChessEngine/debug.cpp.o
+ /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
+ /home/bitterboyy/Documents/baub-chess/ChessEngine/debug.cpp
+ /home/bitterboyy/Documents/baub-chess/ChessEngine/debug.h
+ /home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
 CMakeFiles/baub_chess.dir/ChessEngine/display.cpp.o
  /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
  /home/bitterboyy/Documents/baub-chess/ChessEngine/display.cpp
  /home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
 CMakeFiles/baub_chess.dir/main.cpp.o
  /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
+ /home/bitterboyy/Documents/baub-chess/ChessEngine/debug.h
  /home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
  /home/bitterboyy/Documents/baub-chess/main.cpp

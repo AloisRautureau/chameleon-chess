@@ -1,6 +1,7 @@
 #include <iostream>
 #include "ChessEngine/board_representation.h"
 #include "ChessEngine/display.h"
+#include "ChessEngine/debug.h"
 
 int main() {
     system("clear");
@@ -13,6 +14,10 @@ int main() {
                  "" << std::endl << std::endl;
 
     board_representation board;
+
+    display::showPosition(board);
+
+    debug::perft(board);
 
     display::showPosition(board);
 

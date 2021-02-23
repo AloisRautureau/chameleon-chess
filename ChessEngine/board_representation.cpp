@@ -172,11 +172,6 @@ void board_representation::gen(){
             m_moveStackIndex++;
         }
     }
-
-    for(movebits move : m_moveStack){
-        if(!move) break;
-        std::cout << move << std::endl;
-    }
 }
 
 bool board_representation::sqAttacked(int sq, bool side) {
@@ -192,8 +187,8 @@ bool board_representation::sqAttacked(int sq, bool side) {
             //our given square.
             else{
                 for(auto stepDirection : m_pieceMoves[pieceType]){
-                    if((sq - adress < 0) == (stepDirection < 0) && (sq - adress)%stepDirection) continue;
                     if(stepDirection == 0) break;
+                    if((sq - adress < 0) == (stepDirection < 0) && (sq - adress)%stepDirection) continue;
 
                     int currentSquare  = adress;
                     bool obstacleFound = false;
@@ -332,6 +327,7 @@ bool board_representation::make(movebits move) {
     m_sideToMove ^= 1;
 
     if(inCheck(!m_sideToMove)){
+        takeback();
         return false;
     }
 
