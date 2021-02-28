@@ -6,7 +6,7 @@
 
 void display::showPosition(const board_representation &board) {
     sq square;
-    std::cout << std::endl;
+    std::cout << std::endl << (board.m_sideToMove == WHITE ? "White " : "Black ") << "to move!" << std::endl;
     std::cout << "+-----+-----+-----+-----+-----+-----+-----+-----+" << std::endl;
     for(int i = 0; i < 8; i++){
         for(int j = 0; j < 8; j++){
@@ -47,14 +47,5 @@ void display::showPosition(const board_representation &board) {
         std::cout << "   " << char('A' + i) << "  ";
     }
 
-    for(int side = 0; side < 2; side++){
-        std::cout << (side == 0 ? "WHITE : " : "BLACK : ") << std::endl;
-        for(int piece = 0; piece < 6; piece++){
-            std::cout << piece << " : ";
-            for(auto adress : board.m_pieces[side][piece]){
-                std::cout << adress << ", ";
-            }
-            std::cout << std::endl;
-        }
-    }
+    std::cout << std::endl << "En passant square : " << std::hex << board.m_ep << std::dec << std::endl;
 }

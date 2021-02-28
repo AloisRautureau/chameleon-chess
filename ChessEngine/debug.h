@@ -13,7 +13,7 @@ public:
     static void perft(const board_representation &board);
 
     static unsigned long long int
-    perftRecursive(int depth, board_representation board);
+    perftRecursive(int depth, board_representation board, int* caps, int* ep);
 };
 
 

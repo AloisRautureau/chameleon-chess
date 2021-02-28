@@ -4,10 +4,13 @@
 
 #include "board_representation.h"
 
+//TODO : pawns eating in front (41-31)
+//TODO : cleanup make/unmake
+
 void board_representation::gen(){
     m_moveStackIndex = 0;
     for(int pieceType = 0; pieceType < 6; pieceType++){
-        for(sq adress : m_pieces[m_sideToMove][pieceType]){
+        for(const sq adress : m_pieces[m_sideToMove][pieceType]){
             if(pieceType == PAWN){
                 //We need two different pieces of code depending on which side the pawn belongs to since they can only
                 //move forward
@@ -103,6 +106,7 @@ void board_representation::gen(){
                             m_moveStackIndex++;
                         }
                     }
+
                     if(m_colorBoard[adress + SE] == WHITE || adress + SE == m_ep){ //Capture to the north east
                         if(rank(adress) == 1){ //promo capture case
                             for(int i = 0; i < 4; i++){
@@ -159,7 +163,7 @@ void board_representation::gen(){
      * - The squares between king/rook should not be occupied OR attacked
      * - castling rights must allow the move
      */
-    if(m_sideToMove){
+    if(m_sideToMove == WHITE){
         if(m_castlingRights & WKCASTLE
            && !m_piecesBoard[f1] && !m_piecesBoard[g1] && !m_piecesBoard[e1]
            && !sqAttacked(f1, BLACK) && !sqAttacked(g1, BLACK) && !sqAttacked(e1, BLACK)){
@@ -194,8 +198,8 @@ bool board_representation::sqAttacked(int sq, bool side) {
         for(auto& adress : m_pieces[side][pieceType]){
             if(pieceType == PAWN){
                 //Just check if the given square is in the diagonal of any of the opponents pawns
-                if(side && m_colorBoard[adress + NW] == sq || m_colorBoard[adress + NE] == sq) return true;
-                if(!side && m_colorBoard[adress + SW] == sq || m_colorBoard[adress + SE] == sq) return true;
+                if(side == WHITE && m_colorBoard[adress + NW] == sq || m_colorBoard[adress + NE] == sq) return true;
+                if(side == BLACK && m_colorBoard[adress + SW] == sq || m_colorBoard[adress + SE] == sq) return true;
             }
 
             //Here we can optimize by noticing we don't actually care about directions which aren't going anywhere near
@@ -253,14 +257,14 @@ bool board_representation::make(movebits move) {
 
     //First we update state variables
     if(m_piecesBoard[from] == KING){
-        m_castlingRights &= m_sideToMove ? 0b0011 : 0b1100;
+        m_castlingRights &= m_sideToMove == WHITE? 0b0011 : 0b1100;
     }
     if(m_piecesBoard[from] == ROOK){
         if(file(from) == 7){
-            m_castlingRights &= m_sideToMove ? 0b0111 : 0b1101;
+            m_castlingRights &= m_sideToMove == WHITE ? 0b0111 : 0b1101;
         }
         if(file(from) == 0){
-            m_castlingRights &= m_sideToMove ? 0b1011 : 0b1110;
+            m_castlingRights &= m_sideToMove == WHITE ? 0b1011 : 0b1110;
         }
     }
 
@@ -268,7 +272,7 @@ bool board_representation::make(movebits move) {
     else m_halfclock = 0;
 
     if(mvFlag == DPAWNPUSH) m_ep = sq(to + (m_sideToMove == WHITE ? S : N));
-    else m_ep = a1;
+    else m_ep = inv;
 
     m_ply++;
 
@@ -277,7 +281,9 @@ bool board_representation::make(movebits move) {
      */
     //In case of a capture, we need to delete the captured piece in the oponent piece list
     if(mvFlag & CAP){
-        if(mvFlag == EPCAP) m_pieces[!m_sideToMove][PAWN].remove(sq(to + (m_sideToMove == WHITE ? S : N)));
+        if(mvFlag == EPCAP) {
+            m_pieces[!m_sideToMove][PAWN].remove(sq(to + (m_sideToMove == WHITE ? S : N)));
+        }
         else m_pieces[!m_sideToMove][m_piecesBoard[to]].remove(to);
     }
     m_piecesBoard[to] = m_piecesBoard[from];
@@ -291,23 +297,23 @@ bool board_representation::make(movebits move) {
 
     //We can now take care of special flags, like castling and promotions
     if(mvFlag == KCASTLE) {
-        sq rookAdress = sq(m_sideToMove ? 0x07 : 0x77);
+        sq rookAdress = sq(m_sideToMove == WHITE ? 0x07 : 0x77);
         sq arrivalAdress = sq(to - 1);
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
+        m_colorBoard[arrivalAdress] = m_sideToMove == WHITE ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
     }
     else if(mvFlag == QCASTLE){
-        sq rookAdress = sq(m_sideToMove ? 0x00 : 0x70);
+        sq rookAdress = sq(m_sideToMove == WHITE ? 0x00 : 0x70);
         sq arrivalAdress = sq(to + 1);
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
+        m_colorBoard[arrivalAdress] = m_sideToMove == WHITE ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
@@ -379,23 +385,23 @@ void board_representation::takeback() {
 
     //Undo any castling move
     if(getFlag(move) == KCASTLE){
-        sq rookAdress = sq(m_sideToMove ? 0x05 : 0x75);
-        sq arrivalAdress = sq(m_sideToMove ? 0x07 : 0x77);
+        sq rookAdress = sq(m_sideToMove == WHITE ? 0x05 : 0x75);
+        sq arrivalAdress = sq(m_sideToMove == WHITE ? 0x07 : 0x77);
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
+        m_colorBoard[arrivalAdress] = m_sideToMove == WHITE ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
     }
     else if(getFlag(move) == QCASTLE){
-        sq rookAdress = sq(m_sideToMove ? 0x03 : 0x73);
-        sq arrivalAdress = sq(m_sideToMove ? 0x00 : 0x70);
+        sq rookAdress = sq(m_sideToMove == WHITE ? 0x03 : 0x73);
+        sq arrivalAdress = sq(m_sideToMove == WHITE ? 0x00 : 0x70);
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
+        m_colorBoard[arrivalAdress] = m_sideToMove == WHITE ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
@@ -404,27 +410,26 @@ void board_representation::takeback() {
     //Undo the actual move
     m_piecesBoard[fromSq(move)] = m_piecesBoard[toSq(move)];
     m_colorBoard[fromSq(move)] = m_colorBoard[toSq(move)];
+    m_piecesBoard[toSq(move)] = EMPTY;
+    m_colorBoard[toSq(move)] = EMPTY;
 
     //Place back the piece if capture, otherwise clean the square
     if(getFlag(move) & CAP){
         if(getFlag(move) == EPCAP) {
-            m_pieces[!m_sideToMove][PAWN].push_front(sq(toSq(move) + (m_sideToMove ? S : N)));
-            m_piecesBoard[sq(toSq(move) + (m_sideToMove ? S : N))] = PAWN;
-            m_colorBoard[sq(toSq(move) + (m_sideToMove ? S : N))] = m_sideToMove ? BLACK : WHITE;
+            m_pieces[!m_sideToMove][PAWN].push_front(sq(toSq(move) + (m_sideToMove == WHITE ? S : N)));
+            m_piecesBoard[sq(toSq(move) + (m_sideToMove == WHITE ? S : N))] = PAWN;
+            m_colorBoard[sq(toSq(move) + (m_sideToMove == WHITE ? S : N))] = m_sideToMove == WHITE ? BLACK : WHITE;
         }
         else {
             m_pieces[!m_sideToMove][m_piecesBoard[pieceTaken]].push_front(toSq(move));
             m_piecesBoard[toSq(move)] = pieceTaken;
-            m_colorBoard[toSq(move)] = m_sideToMove ? BLACK : WHITE;
+            m_colorBoard[toSq(move)] = m_sideToMove == WHITE ? BLACK : WHITE;
         }
     }
 
     //Update the piecelist
     m_pieces[m_sideToMove][m_piecesBoard[fromSq(move)]].remove(toSq(move));
     m_pieces[m_sideToMove][m_piecesBoard[fromSq(move)]].push_front(fromSq(move));
-
-    m_piecesBoard[toSq(move)] = EMPTY;
-    m_colorBoard[toSq(move)] = EMPTY;
 
     //We also must set back the castling rights and halfmove clock
     m_castlingRights = m_takebackInfo.top().castling;

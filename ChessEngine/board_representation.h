@@ -51,6 +51,7 @@ enum sq{
     a6=0x50, b6=0x51, c6=0x52, d6=0x53, e6=0x54, f6=0x55, g6=0x56, h6=0x57,
     a7=0x60, b7=0x61, c7=0x62, d7=0x63, e7=0x64, f7=0x65, g7=0x66, h7=0x67,
     a8=0x70, b8=0x71, c8=0x72, d8=0x73, e8=0x74, f8=0x75, g8=0x76, h8=0x77,
+    inv = 0x88
 };
 
 enum flag{
@@ -94,7 +95,7 @@ struct takebackInfo{
     pieceType pieceTaken = EMPTY;
     char castling = 0;
     int halfmove = 0;
-    sq ep = a1;
+    sq ep = inv;
 };
 
 static int file(int square){return square & 7;}

@@ -4,7 +4,7 @@
 
 #include "debug.h"
 
-unsigned long long debug::perftRecursive(int depth, board_representation board) {
+unsigned long long debug::perftRecursive(int depth, board_representation board,int * caps, int* ep) {
     movebits stack[256];
     int stackIndex = 0;
     unsigned long long nodes = 0;
@@ -23,7 +23,16 @@ unsigned long long debug::perftRecursive(int depth, board_representation board) 
     //We also increment the corresponding node counter
     for(int i = 0; i < stackIndex; i++){
         if(board.make(stack[i])){
-            nodes += perftRecursive(depth-1, board);
+            switch(board_representation::getFlag(stack[i])){
+                case CAP:
+                    *caps += 1;
+                    break;
+                case EPCAP:
+                    *ep += 1;
+                    break;
+            }
+
+            nodes += perftRecursive(depth-1, board, caps, ep);
             board.takeback();
         }
     }
@@ -31,9 +40,15 @@ unsigned long long debug::perftRecursive(int depth, board_representation board) 
 }
 
 void debug::perft(const board_representation &board) {
+    //Initialize counting variables
+    int ep = 0;
+    int caps = 0;
+
     std::cout << std::endl << std::endl;
     for(int depth = 0; depth < 10; depth++){
-        auto nodes = perftRecursive(depth, board);
-        std::cout << std::endl << "Nodes searched on depth " << depth << " : " << nodes << std::endl;
+        caps = 0;
+        ep = 0;
+        auto nodes = perftRecursive(depth, board, &caps, &ep);
+        std::cout << std::endl << "Nodes searched on depth " << depth << " : " << nodes << " with " << caps << "  " << ep << std::endl;
     }
 }
