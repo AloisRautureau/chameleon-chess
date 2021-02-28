@@ -42,8 +42,12 @@ void board_representation::gen(){
                                 m_moveStackIndex++;
                             }
                         }
-                        else{
-                            m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+NW), CAP);
+                        else if(adress + NW == m_ep){
+                            m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+NW), EPCAP);
+                            m_moveStackIndex++;
+                        }
+                        else {
+                            m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress + NW), CAP);
                             m_moveStackIndex++;
                         }
                     }
@@ -53,6 +57,10 @@ void board_representation::gen(){
                                 m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+NE), flag(NPROMCAP+i));
                                 m_moveStackIndex++;
                             }
+                        }
+                        else if(adress + NE == m_ep){
+                            m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+NE), EPCAP);
+                            m_moveStackIndex++;
                         }
                         else{
                             m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+NE), CAP);
@@ -86,6 +94,10 @@ void board_representation::gen(){
                                 m_moveStackIndex++;
                             }
                         }
+                        else if(adress + SW == m_ep){
+                            m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+SW), EPCAP);
+                            m_moveStackIndex++;
+                        }
                         else{
                             m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+SW), CAP);
                             m_moveStackIndex++;
@@ -97,6 +109,10 @@ void board_representation::gen(){
                                 m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+SE), flag(NPROMCAP+i));
                                 m_moveStackIndex++;
                             }
+                        }
+                        else if(adress + SE == m_ep){
+                            m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+SE), EPCAP);
+                            m_moveStackIndex++;
                         }
                         else{
                             m_moveStack[m_moveStackIndex] = encodeMove(adress, sq(adress+SE), CAP);
@@ -116,20 +132,19 @@ void board_representation::gen(){
                     if(stepDirection == 0) continue;
 
                     sq currentSquare = adress;
-                    bool obstacleFound = false;
-                    while(!obstacleFound){
+                    while(true){
                         currentSquare = sq(currentSquare + stepDirection);
                         if(m_colorBoard[currentSquare] == m_sideToMove
-                            || (currentSquare & 0x88)) obstacleFound = true;
+                            || (currentSquare & 0x88)) break;
                         else if(m_colorBoard[currentSquare] == !m_sideToMove){
-                            obstacleFound = true;
                             m_moveStack[m_moveStackIndex] = encodeMove(adress, currentSquare, CAP);
                             m_moveStackIndex++;
+                            break;
                         }
                         else{
                             m_moveStack[m_moveStackIndex] = encodeMove(adress, currentSquare, QUIET);
                             m_moveStackIndex++;
-                            obstacleFound = !m_pieceMoves[0][pieceType];
+                            if(!m_pieceMoves[0][pieceType]) break;
                         }
                     }
                 }
@@ -191,14 +206,13 @@ bool board_representation::sqAttacked(int sq, bool side) {
                     if((sq - adress < 0) == (stepDirection < 0) && (sq - adress)%stepDirection) continue;
 
                     int currentSquare  = adress;
-                    bool obstacleFound = false;
-                    while(!obstacleFound){
+                    while(true){
                         currentSquare += stepDirection;
                         if(m_colorBoard[currentSquare] != EMPTY || !m_pieceMoves[0][pieceType]) {
-                            obstacleFound = true;
                             if(currentSquare == sq) return true;
+                            break;
                         }
-                        if(currentSquare & 0x88) obstacleFound = true;
+                        if(currentSquare & 0x88) break;
                         else if(currentSquare == sq) return true;
                     }
                 }
@@ -218,7 +232,6 @@ bool board_representation::inCheck(bool side) {
 movebits board_representation::encodeMove(sq from, sq to, flag flag) {
     return (flag << 12) + (((to + (to & 7)) >> 1) << 6) + ((from + (from & 7)) >> 1);
 }
-
 sq board_representation::fromSq(movebits move) {
     return sq((move & 0x003F) + ((move & 0x003F) & ~7));
 }
@@ -231,7 +244,7 @@ flag board_representation::getFlag(movebits move) {
 
 bool board_representation::make(movebits move) {
     //We need to store some info in the takeback stack to allow it
-    takebackInfo info = {move, pieceType(m_piecesBoard[toSq(move)]), m_castlingRights, m_halfclock};
+    takebackInfo info = {move, pieceType(m_piecesBoard[toSq(move)]), m_castlingRights, m_halfclock, m_ep};
     m_takebackInfo.push(info);
 
     //Store flag, from and to squares to avoid repeating the calculations
@@ -254,7 +267,7 @@ bool board_representation::make(movebits move) {
     if(!(mvFlag & CAP || m_piecesBoard[from] == PAWN)) m_halfclock++;
     else m_halfclock = 0;
 
-    if(mvFlag == DPAWNPUSH) m_ep = sq((from+to)/2);
+    if(mvFlag == DPAWNPUSH) m_ep = sq(to + (m_sideToMove == WHITE ? S : N));
     else m_ep = a1;
 
     m_ply++;
@@ -264,7 +277,7 @@ bool board_representation::make(movebits move) {
      */
     //In case of a capture, we need to delete the captured piece in the oponent piece list
     if(mvFlag & CAP){
-        if(mvFlag == EPCAP) m_pieces[!m_sideToMove][PAWN].remove(sq(to + (m_sideToMove ? -0x10 : 0x10)));
+        if(mvFlag == EPCAP) m_pieces[!m_sideToMove][PAWN].remove(sq(to + (m_sideToMove == WHITE ? S : N)));
         else m_pieces[!m_sideToMove][m_piecesBoard[to]].remove(to);
     }
     m_piecesBoard[to] = m_piecesBoard[from];
@@ -283,7 +296,7 @@ bool board_representation::make(movebits move) {
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove;
+        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
@@ -294,7 +307,7 @@ bool board_representation::make(movebits move) {
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove;
+        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
@@ -371,7 +384,7 @@ void board_representation::takeback() {
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove;
+        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
@@ -382,7 +395,7 @@ void board_representation::takeback() {
         m_piecesBoard[rookAdress] = EMPTY;
         m_colorBoard[rookAdress] = EMPTY;
         m_piecesBoard[arrivalAdress] = ROOK;
-        m_colorBoard[arrivalAdress] = m_sideToMove;
+        m_colorBoard[arrivalAdress] = m_sideToMove ? WHITE : BLACK;
 
         m_pieces[m_sideToMove][ROOK].remove(rookAdress);
         m_pieces[m_sideToMove][ROOK].push_front(arrivalAdress);
@@ -395,15 +408,14 @@ void board_representation::takeback() {
     //Place back the piece if capture, otherwise clean the square
     if(getFlag(move) & CAP){
         if(getFlag(move) == EPCAP) {
-            m_pieces[!m_sideToMove][PAWN].push_front(sq(toSq(move) + (m_sideToMove ? -0x10 : 0x10)));
-            m_ep = toSq(move); //Set en passant square
-            m_piecesBoard[sq(toSq(move) + (m_sideToMove ? -0x10 : 0x10))] = PAWN;
-            m_colorBoard[sq(toSq(move) + (m_sideToMove ? -0x10 : 0x10))] = !m_sideToMove;
+            m_pieces[!m_sideToMove][PAWN].push_front(sq(toSq(move) + (m_sideToMove ? S : N)));
+            m_piecesBoard[sq(toSq(move) + (m_sideToMove ? S : N))] = PAWN;
+            m_colorBoard[sq(toSq(move) + (m_sideToMove ? S : N))] = m_sideToMove ? BLACK : WHITE;
         }
         else {
             m_pieces[!m_sideToMove][m_piecesBoard[pieceTaken]].push_front(toSq(move));
             m_piecesBoard[toSq(move)] = pieceTaken;
-            m_colorBoard[toSq(move)] = !m_sideToMove;
+            m_colorBoard[toSq(move)] = m_sideToMove ? BLACK : WHITE;
         }
     }
 
@@ -417,6 +429,7 @@ void board_representation::takeback() {
     //We also must set back the castling rights and halfmove clock
     m_castlingRights = m_takebackInfo.top().castling;
     m_halfclock = m_takebackInfo.top().halfmove;
+    m_ep = m_takebackInfo.top().ep;
 
     //finally we can just pop the top of the takeback stack
     m_takebackInfo.pop();

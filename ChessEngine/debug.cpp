@@ -35,6 +35,5 @@ void debug::perft(const board_representation &board) {
     for(int depth = 0; depth < 10; depth++){
         auto nodes = perftRecursive(depth, board);
         std::cout << std::endl << "Nodes searched on depth " << depth << " : " << nodes << std::endl;
-        //display::showPosition(board);
     }
 }

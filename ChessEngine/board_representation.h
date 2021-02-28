@@ -94,6 +94,7 @@ struct takebackInfo{
     pieceType pieceTaken = EMPTY;
     char castling = 0;
     int halfmove = 0;
+    sq ep = a1;
 };
 
 static int file(int square){return square & 7;}
