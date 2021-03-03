@@ -101,6 +101,42 @@ struct takebackInfo{
 static int file(int square){return square & 7;}
 static int rank(int square){return square >> 4;}
 
+class pieceList {
+private:
+    sq indices[10]{inv}; //There can be a maximum of 10 of the same pieces (if all pawns promote to said pieceType
+    int board[0x88]{EMPTY}; //This let's us search a piece with O(1) efficiency
+    int size{0};
+
+public:
+    pieceList(std::vector<sq> basePieces){
+        for(sq index : basePieces){
+            board[index] = size;
+            indices[size++] = index;
+        }
+    }
+
+    void add(sq adress){
+        if(size < 10){
+            board[adress] = size;
+            indices[size++] = adress;
+        }
+    }
+
+    void remove(sq adress){
+        size--;
+        int index = board[adress];
+        indices[index] = indices[size];
+        board[indices[index]] = index;
+        indices[size] = inv;
+        board[adress] = EMPTY;
+    }
+
+    sq get(int index){
+        if(index < size) return indices[index];
+        return inv;
+    }
+};
+
 class board_representation {
 protected:
     /*
@@ -150,6 +186,25 @@ protected:
             {E, W, N, S, NW, SW, NE, SE},
             //King
             {E, W, N, S, NW, SW, NE, SE},
+    };
+
+    pieceList m_plist[2][6] = {
+            { //WHITE PIECELISTS
+                pieceList({a2, b2, c2, d2, e2, f2, g2, h2}),
+                pieceList({b1, g1}),
+                pieceList({c1, f1}),
+                pieceList({a1, h1}),
+                pieceList({d1}),
+                pieceList({e1}),
+            },
+            { //BLACK PIECELISTS
+                pieceList({a7, b7, c7, d7, e7, f7, g7, h7}),
+                pieceList({b8, g8}),
+                pieceList({c8, f8}),
+                pieceList({a8, h8}),
+                pieceList({d8}),
+                pieceList({e8}),
+            }
     };
 
     //Variables used to keep track of the game state
