@@ -23,8 +23,6 @@ public:
     //Displays the current position in the console
     static void showPosition(const board_representation &board);
 
-    static void showPieceList(const board_representation &board);
-
     static std::string indexToSquare(sq index);
 
     static sq squareToIndex(std::string square);

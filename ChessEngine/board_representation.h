@@ -5,7 +5,6 @@
 #ifndef BAUB_CHESS_BOARD_REPRESENTATION_H
 #define BAUB_CHESS_BOARD_REPRESENTATION_H
 
-#include <forward_list>
 #include <iostream>
 #include <stack>
 #include <vector>
@@ -125,7 +124,7 @@ protected:
         soWe         sout         soEa
      */
 
-    char m_piecesBoard[0x88] = {
+    char m_pieces[0x88] = {
             ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK, INV, INV, INV, INV, INV, INV, INV, INV,
             PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN,          INV, INV, INV, INV, INV, INV, INV, INV,
             EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,  INV, INV, INV, INV, INV, INV, INV, INV,
@@ -135,7 +134,7 @@ protected:
             PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN, PAWN,          INV, INV, INV, INV, INV, INV, INV, INV,
             ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK, INV, INV, INV, INV, INV, INV, INV, INV,
     };
-    char m_colorBoard[0x88] = {
+    char m_color[0x88] = {
             WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,  INV, INV, INV, INV, INV, INV, INV, INV,
             WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,  INV, INV, INV, INV, INV, INV, INV, INV,
             EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,  INV, INV, INV, INV, INV, INV, INV, INV,
@@ -146,49 +145,7 @@ protected:
             BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK,  INV, INV, INV, INV, INV, INV, INV, INV,
     };
 
-    /*
-     * As we use table-driven move gen to speed up the process, we'll have to store said tables
-     */
-
-    /*
-     * In order not to traverse the entirety of the board each time we scan it (16*8 times can get redundant quickly)
-     * we keep piece-lists, so that we can just check where each piece is.
-     * They are indexed by [color][pieceType]
-     */
-    std::forward_list<sq> m_pieces[2][6] = {
-            //WHITE PIECES
-            {
-                //PAWNS
-                {a2, b2, c2, d2, e2, f2, g2, h2,},
-                //KNIGHTS
-                {b1, g1},
-                //BISHOPS
-                {c1, f1},
-                //ROOKS
-                {a1, h1},
-                //QUEEN
-                {d1},
-                //KING
-                {e1},
-            },
-            //BLACK PIECES
-            {
-                //PAWNS
-                {a7, b7, c7, d7, e7, f7, g7, h7,},
-                //KNIGHTS
-                {b8, g8},
-                //BISHOPS
-                {c8, f8},
-                //ROOKS
-                {a8, h8},
-                //QUEEN
-                {d8},
-                //KING
-                {e8},
-            }
-    };
-
-    int m_pieceMoves[6][8] = {
+    int m_directions[6][8] = {
             //Pawn moves aren't in here, so we use their space to signify if a piece can slide or not
             {false, false, true, true, true, false, false, false},
             //Knights
@@ -204,8 +161,8 @@ protected:
     };
 
     //Variables used to keep track of the game state
-    bool m_sideToMove = WHITE;
-    char m_castlingRights = 0b1111;
+    bool m_side = WHITE;
+    char m_castling = 0b1111;
     int m_halfclock = 0;
     int m_ply = 0;
     sq m_ep = a1;

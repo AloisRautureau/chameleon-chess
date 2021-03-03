@@ -7,6 +7,7 @@
 
 #include "board_representation.h"
 #include "display.h"
+#include <chrono>
 
 class debug {
 public:

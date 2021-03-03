@@ -10,7 +10,7 @@ unsigned long long debug::perftRecursive(int depth, board_representation board, 
     unsigned long long nodes = 0;
 
     //Generate and copy the move stack
-    if((board.m_check & 0b1001) == board.m_sideToMove){
+    if((board.m_check & 0b1001) == board.m_side){
         if(board.genCheckEscape()){
             *check += 1;
         }
@@ -78,10 +78,17 @@ void debug::perft(const board_representation &board) {
         mate = 0;
         prom = 0;
         castles = 0;
+        auto start = std::chrono::high_resolution_clock::now(); //Get starting time
+
         auto nodes = perftRecursive(depth, board, &caps, &ep, &castles, &prom, &check, &mate);
 
+        auto end = std::chrono::high_resolution_clock::now(); //Get ending time
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+
         //Display the results
-        std::cout << "Nodes searched at depth " << depth << " : " << nodes << std::endl <<std::endl;
+        std::cout << "Nodes searched at depth " << depth << " : " << nodes << " in " << duration.count()*0.000001 << " seconds ("
+        << nodes/(duration.count()*0.000001) << " nps)" << std::endl <<std::endl;
         std::cout << "             NODES " << std::endl;
         std::cout << "             ----- " << std::endl;
         std::cout << "CAPTURES     " << caps << std::endl;
