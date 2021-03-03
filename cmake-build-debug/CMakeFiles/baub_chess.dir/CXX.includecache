@@ -13,10 +13,8 @@ iostream
 -
 stack
 -
-
-/home/bitterboyy/Documents/baub-chess/ChessEngine/debug.cpp
-debug.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/debug.h
+vector
+-
 
 /home/bitterboyy/Documents/baub-chess/ChessEngine/debug.h
 board_representation.h
@@ -27,4 +25,14 @@ display.h
 /home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
 board_representation.h
 /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
+
+/home/bitterboyy/Documents/baub-chess/main.cpp
+iostream
+-
+ChessEngine/board_representation.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
+ChessEngine/display.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
+ChessEngine/debug.h
+/home/bitterboyy/Documents/baub-chess/ChessEngine/debug.h
 
