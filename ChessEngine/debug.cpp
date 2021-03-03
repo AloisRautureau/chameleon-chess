@@ -9,16 +9,7 @@ unsigned long long debug::perftRecursive(int depth, board_representation board, 
     int stackIndex = 0;
     unsigned long long nodes = 0;
 
-    //Generate and copy the move stack
-    if((board.m_check & 0b1001) == board.m_side){
-        if(board.genCheckEscape()){
-            *check += 1;
-        }
-        else{
-            *mate += 1;
-        }
-    }
-    else board.gen();
+    board.gen();
 
     if(depth == 0) return 1;
 

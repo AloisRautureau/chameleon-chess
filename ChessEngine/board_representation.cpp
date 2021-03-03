@@ -9,145 +9,128 @@ void board_representation::gen(){
     for(int adress = 0; adress < 0x78; adress++){
         char pieceType = m_pieces[adress];
         if(adress & 0x88 || m_color[adress] != m_side) continue;
-            if(pieceType == PAWN){
-                //We need two different pieces of code depending on which side the pawn belongs to since they can only
-                //move forward
-                if(m_side == WHITE){
-                    /*
-                     * Pawns can either :
-                     * - push one square if no piece is on target
-                     * - push two squares if they stand on their original rank and no piece is obstructing
-                     * - one square diagonnaly forward if an opposite piece sits there
-                     */
-                    if(m_pieces[adress + N] == EMPTY && !(adress+N & 0x88)){
-                        if(m_pieces[adress + (2*N)] == EMPTY && rank(adress) == 1){ //Double push is available
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+(2*N)), DPAWNPUSH);
-                            
-                        }
-                        if(rank(adress) == 6){ //That would be a promotion
-                            for(int i = 0; i < 4; i++){
-                                m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+N), flag(NPROM+i));
-                                
-                            }
-                        }
-                        else{
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+N), QUIET);
-                            
+        if(pieceType == PAWN){
+            //We need two different pieces of code depending on which side the pawn belongs to since they can only
+            //move forward
+            if(m_side == WHITE){
+                /*
+                * Pawns can either :
+                * - push one square if no piece is on target
+                * - push two squares if they stand on their original rank and no piece is obstructing
+                * - one square diagonnaly forward if an opposite piece sits there
+                */
+                if(m_pieces[adress + N] == EMPTY){
+                    if(m_pieces[adress + (2*N)] == EMPTY && rank(adress) == 1){ //Double push is available
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+(2*N)), DPAWNPUSH);
+                    }
+                    if(rank(adress) == 6){ //That would be a promotion
+                        for(int i = 0; i < 4; i++){
+                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+N), flag(NPROM+i));
                         }
                     }
-
-                    if((m_color[adress + NW] == BLACK || adress + NW == m_ep) && !(adress+NW & 0x88)){ //Capture to the north west
-                        if(rank(adress) == 6){ //promo capture case
-                            for(int i = 0; i < 4; i++){
-                                m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NW), flag(NPROMCAP+i));
-                                
-                            }
-                        }
-                        else if(adress + NW == m_ep){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NW), EPCAP);
-                            
-                        }
-                        else if(m_color[adress + NW] == BLACK) {
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress + NW), CAP);
-                            
-                        }
-                    }
-                    if((m_color[adress + NE] == BLACK || adress + NE == m_ep) && !(adress+NE & 0x88)){ //Capture to the north east
-                        if(rank(adress) == 6){ //promo capture case
-                            for(int i = 0; i < 4; i++){
-                                m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NE), flag(NPROMCAP+i));
-                                
-                            }
-                        }
-                        else if(adress + NE == m_ep){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NE), EPCAP);
-                            
-                        }
-                        else if(m_color[adress + NE] == BLACK){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NE), CAP);
-                            
-                        }
+                    else{
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+N), QUIET);
                     }
                 }
-                else{
-                    //Same thing as the above code but mirrored
-                    if(m_pieces[adress + S] == EMPTY && !(adress+S & 0x88)){
-                        if(m_pieces[adress + (2*S)] == EMPTY && rank(adress) == 6){ //Double push is available
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+(2*S)), DPAWNPUSH);
-                            
-                        }
-                        if(rank(adress) == 1){ //That would be a promotion
-                            for(int i = 0; i < 4; i++){
-                                m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+S), flag(NPROM+i));
-                                
-                            }
-                        }
-                        else{
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+S), QUIET);
-                            
+
+                if((m_color[adress + NW] == BLACK || adress + NW == m_ep) && !(adress+NW & 0x88)){ //Capture to the north west
+                    if(rank(adress) == 6){ //promo capture case
+                        for(int i = 0; i < 4; i++){
+                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NW), flag(NPROMCAP+i));
                         }
                     }
-
-                    if((m_color[adress + SW] == WHITE || adress + SW == m_ep) && !(adress+SW & 0x88)){ //Capture to the north west
-                        if(rank(adress) == 1){ //promo capture case
-                            for(int i = 0; i < 4; i++){
-                                m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SW), flag(NPROMCAP+i));
-                                
-                            }
-                        }
-                        else if(adress + SW == m_ep){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SW), EPCAP);
-                            
-                        }
-                        else if(m_color[adress + SW] == WHITE){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SW), CAP);
-                            
+                    else if(adress + NW == m_ep){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NW), EPCAP);
+                    }
+                    else if(m_color[adress + NW] == BLACK) {
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress + NW), CAP);
+                    }
+                }
+                if((m_color[adress + NE] == BLACK || adress + NE == m_ep) && !(adress+NE & 0x88)){ //Capture to the north east
+                    if(rank(adress) == 6){ //promo capture case
+                        for(int i = 0; i < 4; i++){
+                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NE), flag(NPROMCAP+i));
                         }
                     }
-
-                    if((m_color[adress + SE] == WHITE || adress + SE == m_ep) && !(adress+SE & 0x88)){ //Capture to the north east
-                        if(rank(adress) == 1){ //promo capture case
-                            for(int i = 0; i < 4; i++){
-                                m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SE), flag(NPROMCAP+i));
-                                
-                            }
-                        }
-                        else if(adress + SE == m_ep){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SE), EPCAP);
-                        }
-                        else if(m_color[adress + SE] == WHITE){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SE), CAP);
-                        }
+                    else if(adress + NE == m_ep){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NE), EPCAP);
+                    }
+                    else if(m_color[adress + NE] == BLACK){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+NE), CAP);
                     }
                 }
             }
-
-            //Next we can deal with sliding piece generation
             else{
-                //Sliding pieces use rays to check when they sould stop being able to move in a certain direction
-                //to make that happen, we make one step in every given direction until we encounter an obstacle
-                //If said obstacle is one of our own pieces or out of the board shenanigans, we can't make the last step
-                //Otherwise, the last step is a capture
-                for(auto stepDirection : m_directions[pieceType]){
-                    if(stepDirection == 0) continue;
+                //Same thing as the above code but mirrored
+                if(m_pieces[adress + S] == EMPTY && !(adress+S & 0x88)){
+                    if(m_pieces[adress + (2*S)] == EMPTY && rank(adress) == 6){ //Double push is available
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+(2*S)), DPAWNPUSH);
+                    }
+                    if(rank(adress) == 1){ //That would be a promotion
+                        for(int i = 0; i < 4; i++){
+                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+S), flag(NPROM+i));
+                        }
+                    }
+                    else{
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+S), QUIET);
+                    }
+                }
 
-                    sq currentSquare = sq(adress);
-                    while(true){
-                        currentSquare = sq(currentSquare + stepDirection);
-                        if(m_color[currentSquare] == m_side
-                            || (currentSquare & 0x88)) break;
-                        else if(m_color[currentSquare] == !m_side && m_pieces[currentSquare] != EMPTY){
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), currentSquare, CAP);
-                            break;
+                if((m_color[adress + SW] == WHITE || adress + SW == m_ep) && !(adress+SW & 0x88)){ //Capture to the north west
+                    if(rank(adress) == 1){ //promo capture case
+                        for(int i = 0; i < 4; i++){
+                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SW), flag(NPROMCAP+i));
                         }
-                        else{
-                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), currentSquare, QUIET);
-                            if(!m_directions[0][pieceType]) break;
+                    }
+                    else if(adress + SW == m_ep){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SW), EPCAP);
+                    }
+                    else if(m_color[adress + SW] == WHITE){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SW), CAP);
+                    }
+                }
+
+                if((m_color[adress + SE] == WHITE || adress + SE == m_ep) && !(adress+SE & 0x88)){ //Capture to the north east
+                    if(rank(adress) == 1){ //promo capture case
+                        for(int i = 0; i < 4; i++){
+                            m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SE), flag(NPROMCAP+i));
+                                
                         }
+                    }
+                    else if(adress + SE == m_ep){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SE), EPCAP);
+                    }
+                    else if(m_color[adress + SE] == WHITE){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), sq(adress+SE), CAP);
                     }
                 }
             }
         }
+        //Next we can deal with sliding piece generation
+        else{
+            //Sliding pieces use rays to check when they sould stop being able to move in a certain direction
+            //to make that happen, we make one step in every given direction until we encounter an obstacle
+            //If said obstacle is one of our own pieces or out of the board shenanigans, we can't make the last step
+            //Otherwise, the last step is a capture
+            for(auto stepDirection : m_directions[pieceType]){
+                if(stepDirection == 0) continue;
+                sq currentSquare = sq(adress);
+                while(true){
+                    currentSquare = sq(currentSquare + stepDirection);
+                    if(m_color[currentSquare] == m_side
+                    || (currentSquare & 0x88)) break;
+                    else if(m_color[currentSquare] == !m_side && m_pieces[currentSquare] != EMPTY){
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), currentSquare, CAP);
+                        break;
+                    }
+                    else{
+                        m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), currentSquare, QUIET);
+                        if(!m_directions[0][pieceType]) break;
+                    }
+                }
+            }
+        }
+    }
 
     //Lastly, we can deal with castling
     /*
@@ -159,155 +142,28 @@ void board_representation::gen(){
     if(m_side == WHITE){
         if(m_castling & WKCASTLE
            && m_pieces[f1] == EMPTY && m_pieces[g1] == EMPTY
-           && !sqAttacked(f1, BLACK) && !sqAttacked(g1, BLACK) && (m_check & 0b1001) != WHITE){
+           && !sqAttacked(f1, BLACK) && !sqAttacked(g1, BLACK) && !inCheck(WHITE)){
             m_moveStack[m_moveStackIndex++] = encodeMove(e1, g1, KCASTLE);
         }
         if(m_castling & WQCASTLE
            && m_pieces[d1] == EMPTY && m_pieces[c1] == EMPTY && m_pieces[b1] == EMPTY
-           && !sqAttacked(d1, BLACK) && !sqAttacked(c1, BLACK) && !sqAttacked(b1, BLACK) && (m_check & 0b1001) != WHITE){
+           && !sqAttacked(d1, BLACK) && !sqAttacked(c1, BLACK) && !sqAttacked(b1, BLACK) && !inCheck(WHITE)){
             m_moveStack[m_moveStackIndex++] = encodeMove(e1, c1, QCASTLE);
         }
     }
     else {
         if (m_castling & BKCASTLE
             && m_pieces[f8] == EMPTY && m_pieces[g8] == EMPTY
-            && !sqAttacked(f8, WHITE) && !sqAttacked(g8, WHITE) && (m_check & 0b1001) != BLACK) {
+            && !sqAttacked(f8, WHITE) && !sqAttacked(g8, WHITE) && !inCheck(BLACK)) {
             m_moveStack[m_moveStackIndex++] = encodeMove(e8, g8, KCASTLE);
         }
         if (m_castling & BQCASTLE
             && m_pieces[d8] == EMPTY && m_pieces[c8] == EMPTY && m_pieces[b8] == EMPTY
-            && !sqAttacked(d8, WHITE) && !sqAttacked(c8, WHITE) && !sqAttacked(b8, WHITE) && (m_check & 0b1001) != BLACK) {
+            && !sqAttacked(d8, WHITE) && !sqAttacked(c8, WHITE) && !sqAttacked(b8, WHITE) && !inCheck(BLACK)) {
             m_moveStack[m_moveStackIndex++] = encodeMove(e8, c8, QCASTLE);
         }
     }
 }
-
-bool board_representation::genCheckEscape() {
-    m_moveStackIndex = 0;
-    //Find the king
-    sq kingSquare = inv;
-    for(int i = 0; i < 0x78; i++){
-        if(m_pieces[i] == KING && m_color[i] == m_side) kingSquare = sq(i);
-    }
-    //Stores every available king squares
-    for(int direction : m_directions[KING]){
-        if(!sqAttacked(kingSquare + direction, !m_side) && !((kingSquare + direction)&0x88)){
-            if(m_pieces[kingSquare + direction] == EMPTY){
-                m_moveStack[m_moveStackIndex++] = encodeMove(kingSquare, sq(kingSquare + direction), QUIET);
-            }
-            else if(m_color[kingSquare + direction] == !m_side){
-                m_moveStack[m_moveStackIndex++] = encodeMove(kingSquare, sq(kingSquare + direction), CAP);
-            }
-        }
-    }
-
-    //We actually don't need to generate any other type of move if the king is double checked, since only king moves can be legal.
-
-    if(!(m_check & 0b0010)){
-        //Generate moves that either capture an attacking piece or cut the ray between the king and the attacking piece
-        sq attacks[256];
-        int attacksIndex = 0;
-
-        for(auto adress : m_checkingPieces){
-            attacks[attacksIndex++] = adress;
-            auto piece = pieceType(m_pieces[adress]);
-            //For each checking piece, we generate their ray of attack towards the king and put it in the attacks array
-            if(piece == PAWN || piece == KNIGHT || piece == KING) continue; //Pawns/Knights/King don't generate rays, so we don't need to care about those
-
-            for(auto stepDirection : m_directions[piece]){
-                if(stepDirection == 0) continue;
-                if((kingSquare - adress < 0) != (stepDirection < 0) || (kingSquare - adress)%stepDirection ||
-                (rank(kingSquare) != rank(adress) && abs(stepDirection) == 1)) continue;
-
-                sq currentSquare = adress;
-                while(true){
-                    currentSquare = sq(currentSquare + stepDirection);
-                    if(m_color[currentSquare] == !m_side
-                       || (currentSquare & 0x88)) break;
-                    else if(m_color[currentSquare] == m_side){
-                        attacks[attacksIndex++] = currentSquare;
-                        break;
-                    }
-                    else{
-                        attacks[attacksIndex++] = currentSquare;
-                    }
-                }
-            }
-        }
-
-        //Now we just need to check which squares our pieces can get to
-        for(int i = 0; i < attacksIndex; i++){
-            sq square = attacks[i];
-
-            for(int adress = 0; adress < 0x78; adress++){
-                char pieceType = m_pieces[adress];
-                if(adress & 0x88 || m_color[adress] != m_side) continue;
-                    if(pieceType == PAWN){
-                        //Just check if the given square is in the diagonal of any of the opponents pawns
-                        if(m_side == WHITE){
-                            if(m_pieces[sq(adress) + N] == EMPTY){
-                                if(sq(adress) + N == square) m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, QUIET);
-                                else if(sq(adress) + 2*N == square && m_pieces[square] == EMPTY && rank(sq(adress)) == 1){
-                                    m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, DPAWNPUSH);
-                                }
-                            }
-
-                            else if((sq(adress) + NW == square && (m_color[square] == !m_side || sq(adress) + NW == m_ep)) ||
-                                (sq(adress) + NE == square && (m_color[square] == !m_side || sq(adress) + NE == m_ep))){
-                                    m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, m_ep == square ? EPCAP : CAP);
-                            }
-                            //Case where the piece is a pawn and can be captured en passant
-                            else if(square + N == m_ep && (sq(adress) + NW == m_ep || sq(adress) + NE == m_ep)) m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, EPCAP);
-                        }
-
-                        else{
-                            if(m_pieces[sq(adress) + S] == EMPTY){
-                                if(sq(adress) + S == square){
-                                    m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, QUIET);
-                                }
-                                else if(sq(adress) + 2*S == square && m_pieces[square] == EMPTY && rank(sq(adress)) == 6) {
-                                    m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, DPAWNPUSH);
-                                }
-                            }
-
-                            else if((sq(adress) + SW == square && (m_color[square] == !m_side || sq(adress) + SW == m_ep)) ||
-                            (sq(adress) + SE == square && (m_color[square] == !m_side || sq(adress) + SE == m_ep))){
-                                    m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, m_ep == square ? EPCAP : CAP);
-                            }
-                            //Case where the piece is a pawn and can be captured en passant
-                            else if(square + S == m_ep && (sq(adress) + SW == m_ep || sq(adress) + SE == m_ep)) m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), square, EPCAP);
-                        }
-                    }
-
-                    else{
-                        for(auto stepDirection : m_directions[pieceType]){
-                            if(stepDirection == 0) break;
-                            //Here we can optimize by noticing we don't actually care about directions which aren't going anywhere near
-                            //our given square.
-                            if((square - sq(adress) < 0) != (stepDirection < 0) || (square - sq(adress))%stepDirection) continue;
-
-                            sq currentSquare = sq(adress);
-                            while(true){
-                                currentSquare = sq(currentSquare + stepDirection);
-                                if(currentSquare & 0x88 || m_color[currentSquare] == m_side) break;
-                                if(m_color[currentSquare] == !m_side) {
-                                    if(currentSquare == square) m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), currentSquare, CAP);
-                                    break;
-                                }
-                                else if(currentSquare == square){
-                                    m_moveStack[m_moveStackIndex++] = encodeMove(sq(adress), currentSquare, QUIET);
-                                    break;
-                                }
-                                if(!m_directions[0][pieceType]) break;
-                            }
-                        }
-                    }
-            }
-        }
-    }
-    return m_moveStackIndex != 0;
-}
-
 
 bool board_representation::sqAttacked(int sq, bool side) {
     for(int adress = 0; adress < 0x78; adress++){
@@ -342,58 +198,14 @@ bool board_representation::sqAttacked(int sq, bool side) {
     return false;
 }
 
-std::vector<sq> board_representation::attackingPieces(sq square, bool side){
-    std::vector<sq> attackingPieces = {};
-
-    for(int adress = 0; adress < 0x78; adress++){
-        char pieceType = m_pieces[adress];
-        if(adress & 0x88 || m_color[adress] != side) continue;
-            if(pieceType == PAWN){
-                //Just check if the given square is in the diagonal of any of the opponents pawns
-                if(side == WHITE && (adress + NW == square || adress + NE == square)) attackingPieces.push_back(sq(adress));
-                if(side == BLACK && (adress + SW == square || adress + SE == square)) attackingPieces.push_back(sq(adress));
-            }
-
-                //Here we can optimize by noticing we don't actually care about directions which aren't going anywhere near
-                //our given square.
-            else{
-                for(auto stepDirection : m_directions[pieceType]){
-                    if(stepDirection == 0) break;
-                    if((square - adress < 0) == (stepDirection < 0) && (square - adress)%stepDirection) continue;
-
-                    int currentSquare  = adress;
-                    while(true){
-                        currentSquare += stepDirection;
-                        if(currentSquare & 0x88) break;
-                        if(m_color[currentSquare] != EMPTY || !m_directions[0][pieceType]) {
-                            if(currentSquare == square) attackingPieces.push_back(sq(adress));
-                            break;
-                        }
-                        else if(currentSquare == square){
-                            attackingPieces.push_back(sq(adress));
-                            break;
-                        }
-                    }
-                }
-            }
-    }
-    return attackingPieces;
-}
-
-void board_representation::updateCheck() {
-    m_check = NONE;
+bool board_representation::inCheck(bool side) {
     //Find the king
     sq kingSquare = inv;
     for(int i = 0; i < 0x78; i++){
-        if(m_pieces[i] == KING && m_color[i] == m_side) kingSquare = sq(i);
+        if(m_pieces[i] == KING && m_color[i] == side) kingSquare = sq(i);
     }
 
-    if(m_check == NONE){
-        m_checkingPieces = attackingPieces(kingSquare, !m_side);
-        if(m_checkingPieces.size() >= 2) m_check = checkType(DOUBLEW + m_side); //If two or more pieces are attacking the king, it's a double check
-        else if(m_checkingPieces.size() == 1) m_check = checkType(SINGLEW + m_side); //Single check case
-        else m_check = NONE; //No check at all
-    }
+    return sqAttacked(kingSquare, !side);
 }
 
 movebits board_representation::encodeMove(sq from, sq to, flag flag) {
@@ -496,10 +308,7 @@ bool board_representation::make(movebits move) {
     //Now that we're finished we can change the side to move, then check if the king is threatened
     m_side ^= 1;
 
-    //Update the check flag
-    updateCheck();
-
-    if((m_check & 0b1001) == !m_side){
+    if(inCheck(!m_side)){
         takeback();
         return false;
     }
@@ -581,9 +390,6 @@ void board_representation::takeback() {
     m_castling = m_takebackInfo.top().castling;
     m_halfclock = m_takebackInfo.top().halfmove;
     m_ep = m_takebackInfo.top().ep;
-
-    //Update the check status
-    updateCheck();
 
     //finally we can just pop the top of the takeback stack
     m_takebackInfo.pop();
@@ -716,8 +522,6 @@ void board_representation::setFEN(std::string fen) {
     m_halfclock = std::stoi(variableData[3]);
 
     m_ply = std::stoi(variableData[4]);
-
-    updateCheck();
 }
 
 

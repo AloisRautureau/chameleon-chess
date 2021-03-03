@@ -42,14 +42,6 @@ enum pieceColor{
     BLACK,
 };
 
-enum checkType{
-    SINGLEW = 0b0000,
-    SINGLEB = 0b0001,
-    DOUBLEW = 0b0010,
-    DOUBLEB = 0b0011,
-    NONE = 0b1000,
-};
-
 enum sq{
     a1=0x00, b1=0x01, c1=0x02, d1=0x03, e1=0x04, f1=0x05, g1=0x06, h1=0x07,
     a2=0x10, b2=0x11, c2=0x12, d2=0x13, e2=0x14, f2=0x15, g2=0x16, h2=0x17,
@@ -166,8 +158,6 @@ protected:
     int m_halfclock = 0;
     int m_ply = 0;
     sq m_ep = a1;
-    checkType m_check = NONE;
-    std::vector<sq> m_checkingPieces = {};
     std::stack<takebackInfo> m_takebackInfo;
 
     //Move list is a 256 entry array
@@ -183,20 +173,12 @@ public:
      * TODO : Use table-driven generation to speed things up
      */
     void gen();
-    //Is called if the side to move is in check, to generate only out of check moves
-    //It returns a boolean that tells wether or not any moves are available (if false, we're in stalemate/checkmate)
-    bool genCheckEscape();
     //Generates only captures/checking moves, useful during quiescence search
     void geNoisy();
 
-
-
     //Checks if the given square is under attack by the given side
     bool sqAttacked(int sq, bool side);
-    //Same thing, but returns a list of every piece attacking a given square (useful to get check type), it's a bit slower
-    std::vector<sq> attackingPieces(sq square, bool side);
-    //Updates the check variables (type of check, and attacking pieces for the king)
-    void updateCheck();
+    bool inCheck(bool side);
 
     //Encodes a move on 16bits
     static movebits encodeMove(sq from, sq to, flag flag);
