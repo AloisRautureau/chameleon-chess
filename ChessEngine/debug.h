@@ -17,6 +17,8 @@ public:
     perftRecursive(int depth, board_representation board, int* caps, int* ep, int* castles, int* prom, int* check, int* mate);
 
     static void perftDivide(board_representation &board);
+
+    static void perftSuite(board_representation &board, const std::vector<std::string>& fenStack);
 };
 
 

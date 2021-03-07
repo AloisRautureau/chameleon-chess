@@ -6,10 +6,6 @@
 
 #IncludeRegexTransform: 
 
-/home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.cpp
-board_representation.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
-
 /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
 iostream
 -
@@ -18,10 +14,6 @@ stack
 vector
 -
 
-/home/bitterboyy/Documents/baub-chess/ChessEngine/debug.cpp
-debug.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/debug.h
-
 /home/bitterboyy/Documents/baub-chess/ChessEngine/debug.h
 board_representation.h
 /home/bitterboyy/Documents/baub-chess/ChessEngine/board_representation.h
@@ -29,10 +21,6 @@ display.h
 /home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
 chrono
 -
-
-/home/bitterboyy/Documents/baub-chess/ChessEngine/display.cpp
-display.h
-/home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
 
 /home/bitterboyy/Documents/baub-chess/ChessEngine/display.h
 board_representation.h

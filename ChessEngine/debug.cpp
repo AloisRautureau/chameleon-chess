@@ -62,7 +62,7 @@ void debug::perft(const board_representation &board) {
     int mate = 0;
 
     std::cout << std::endl << std::endl;
-    for(int depth = 0; depth < 8; depth++){
+    for(int depth = 0; depth < 7; depth++){
         caps = 0;
         ep = 0;
         check = 0;
@@ -124,5 +124,16 @@ void debug::perftDivide(board_representation &board){
         }
         std::cout << "Total at depth " << depth << " : " << totalNodes;
         std::cout << std::endl << std::endl;
+    }
+}
+
+void debug::perftSuite(board_representation &board, const std::vector<std::string>& fenStack) {
+    int counter = 0;
+    for(const std::string& fen : fenStack){
+        board.setFEN(fen);
+        std::cout << "##### POSITION " << ++counter << " #####" << std::endl << std::endl;
+        display::showPosition(board);
+        std::cout << std::endl << "FEN : " << fen << std::endl << std::endl;
+        perft(board);
     }
 }

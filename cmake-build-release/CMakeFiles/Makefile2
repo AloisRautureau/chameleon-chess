@@ -94,12 +94,12 @@ clean: CMakeFiles/baub_chess.dir/clean
 CMakeFiles/baub_chess.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/baub_chess.dir/build.make CMakeFiles/baub_chess.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/baub_chess.dir/build.make CMakeFiles/baub_chess.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/bitterboyy/Documents/baub-chess/cmake-build-release/CMakeFiles --progress-num=1,2,3,4,5 "Built target baub_chess"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/bitterboyy/Documents/baub-chess/cmake-build-release/CMakeFiles --progress-num=1,2,3,4,5,6 "Built target baub_chess"
 .PHONY : CMakeFiles/baub_chess.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/baub_chess.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/bitterboyy/Documents/baub-chess/cmake-build-release/CMakeFiles 5
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/bitterboyy/Documents/baub-chess/cmake-build-release/CMakeFiles 6
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/baub_chess.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/bitterboyy/Documents/baub-chess/cmake-build-release/CMakeFiles 0
 .PHONY : CMakeFiles/baub_chess.dir/rule

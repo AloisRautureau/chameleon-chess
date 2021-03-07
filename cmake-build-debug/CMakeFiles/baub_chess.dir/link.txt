@@ -1,1 +1,1 @@
-/usr/bin/c++  -g   CMakeFiles/baub_chess.dir/main.cpp.o CMakeFiles/baub_chess.dir/ChessEngine/board_representation.cpp.o CMakeFiles/baub_chess.dir/ChessEngine/display.cpp.o CMakeFiles/baub_chess.dir/ChessEngine/debug.cpp.o  -o baub_chess 
+/usr/bin/c++  -g   CMakeFiles/baub_chess.dir/main.cpp.o CMakeFiles/baub_chess.dir/ChessEngine/board_representation.cpp.o CMakeFiles/baub_chess.dir/ChessEngine/display.cpp.o CMakeFiles/baub_chess.dir/ChessEngine/debug.cpp.o CMakeFiles/baub_chess.dir/ChessEngine/evaluation.cpp.o  -o baub_chess 
