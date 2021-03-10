@@ -1,17 +1,36 @@
-# baub-chess
+# cameleon-chess
 
-BAUB-Chess is the entire code needed to bring BAUB, the robotic chess player, to life.
-It includes a **chess engine**, and the librairy necessary for him to **interact with the board**.
-Most of the code is a combination of C++ and Python code.
+cameleon-chess is the **chess engine** which will be powering up BAUB-Chess in the near future. The goal is to make it a fully functionnal, decent, and UCI compatible engine, optimized enough to run correctly on a Raspberry Pi.<br/>
+It uses a combination of a 0x88 board representation, speed up by keeping a piece-list to avoid scanning it in its entirety.
 
-## Why ?
+## TODO
 
-BAUB was an idea that came in mind during the recent pandemic, in which I started playing chess, and was in dire need of a programming project.
-It was mainly created as a means to learn about the developpement of complex applications using multiple sub-modules all working together in harmony, robotics and electronics.
+[x] Board Representation<br/>
+[x] Evaluation function<br/>
+[x] Search function<br/>
+[ ] UCI compatibility<br/>
+[ ] Deep optimization<br/>
+[ ] Opening book<br/>
 
-## How do I use BAUB ?
+## How do I use cameleon ?
 
-The chess engine itself can simply be used by cloning the ChessEngine directory, compiling the code and launching the resulting executable.
-Another way, when it's ready, will be to test it through a website made specifically for the occasion! It's not yet finished tho.
-
-As for the librairy, a documentation is set in the BoardInteraction directory.
+The engine features a functionnal CLI, while it patiently waits for UCI implementation.<br/>
+For now, only simple CPU vs Human play is possible in the console, the only documentation is the move notation, which goes as follows :<br/>
+<br/>
+FROMTO-FLAG<br/>
+  <br/>
+With FROM and TO being the starting and landing squares respectively, and FLAG indicating the move type :<br/>
+QUIET               -> 00<br/>
+DOUBLE PAWN PUSH    -> 01<br/>
+KINGSIDE CASTLING   -> 02<br/>
+QUEENSIDE CASTLING  -> 03<br/>
+CAPTURE             -> 04<br/>
+EN PASSANT          -> 05<br/>
+KNIGHT PROMOTION    -> 08<br/>
+BISHOP PROMOTION    -> 09<br/>
+ROOK PROMOTION      -> 10<br/>
+QUEEN PROMOTION     -> 11<br/>
+KNIGHT PROMOCAPTURE -> 12<br/>
+BISHOP PROMOCAPTURE -> 13<br/>
+ROOK PROMOCAPTURE   -> 14<br/>
+QUEEN PROMOCAPTURE  -> 15<br/>
