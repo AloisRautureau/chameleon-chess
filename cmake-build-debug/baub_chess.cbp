@@ -109,6 +109,12 @@
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/misc.h">
 			<Option target="baub_chess"/>
 		</Unit>
+		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/search.cpp">
+			<Option target="baub_chess"/>
+		</Unit>
+		<Unit filename="/home/bitterboyy/Documents/baub-chess/ChessEngine/search.h">
+			<Option target="baub_chess"/>
+		</Unit>
 		<Unit filename="/home/bitterboyy/Documents/baub-chess/main.cpp">
 			<Option target="baub_chess"/>
 		</Unit>

@@ -10,11 +10,14 @@
  * The goal will be to implement more complex evaluation schemes as time goes on
  */
 
-#include "board_representation.h";
+#include "board_representation.h"
 
 //The value that each piece adds to the gamephase counter
 //Values taken from RofChade once again
 static int gamephaseValue[6] = {0, 1, 1, 2, 4, 0};
+//Tables are indexed by side, piece, and square
+static int mg_tables[2][6][0x88];
+static int eg_tables[2][6][0x88];
 
 class evaluation {
 protected:
@@ -148,10 +151,6 @@ protected:
                         -53, -34, -21, -11, -28, -14, -24, -43, 0,   0,   0,   0,   0,   0,  0,   0,
             }
     };
-
-    //Tables are indexed by side, piece, and square
-    static int mg_tables[2][6][0x88];
-    static int eg_tables[2][6][0x88];
 
 public:
     evaluation();

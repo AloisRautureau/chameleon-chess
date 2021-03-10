@@ -11,6 +11,7 @@
 class display;
 class debug;
 class evaluation;
+class search;
 
 /*
  * This class is the representation of a board state.
@@ -252,6 +253,7 @@ protected:
     friend display;
     friend debug;
     friend evaluation;
+    friend search;
 
 public:
     /*

@@ -13,11 +13,19 @@ CMakeFiles/baub_chess.dir/ChessEngine/display.cpp.o: ../ChessEngine/board_repres
 CMakeFiles/baub_chess.dir/ChessEngine/display.cpp.o: ../ChessEngine/display.cpp
 CMakeFiles/baub_chess.dir/ChessEngine/display.cpp.o: ../ChessEngine/display.h
 
+CMakeFiles/baub_chess.dir/ChessEngine/evaluation.cpp.o: ../ChessEngine/board_representation.h
 CMakeFiles/baub_chess.dir/ChessEngine/evaluation.cpp.o: ../ChessEngine/evaluation.cpp
 CMakeFiles/baub_chess.dir/ChessEngine/evaluation.cpp.o: ../ChessEngine/evaluation.h
+
+CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.o: ../ChessEngine/board_representation.h
+CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.o: ../ChessEngine/evaluation.h
+CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.o: ../ChessEngine/search.cpp
+CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.o: ../ChessEngine/search.h
 
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/board_representation.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/debug.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/display.h
+CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/evaluation.h
+CMakeFiles/baub_chess.dir/main.cpp.o: ../ChessEngine/search.h
 CMakeFiles/baub_chess.dir/main.cpp.o: ../main.cpp
 

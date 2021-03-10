@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_CHECK_CXX
   "/home/bitterboyy/Documents/baub-chess/ChessEngine/debug.cpp" "/home/bitterboyy/Documents/baub-chess/cmake-build-debug/CMakeFiles/baub_chess.dir/ChessEngine/debug.cpp.o"
   "/home/bitterboyy/Documents/baub-chess/ChessEngine/display.cpp" "/home/bitterboyy/Documents/baub-chess/cmake-build-debug/CMakeFiles/baub_chess.dir/ChessEngine/display.cpp.o"
   "/home/bitterboyy/Documents/baub-chess/ChessEngine/evaluation.cpp" "/home/bitterboyy/Documents/baub-chess/cmake-build-debug/CMakeFiles/baub_chess.dir/ChessEngine/evaluation.cpp.o"
+  "/home/bitterboyy/Documents/baub-chess/ChessEngine/search.cpp" "/home/bitterboyy/Documents/baub-chess/cmake-build-debug/CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.o"
   "/home/bitterboyy/Documents/baub-chess/main.cpp" "/home/bitterboyy/Documents/baub-chess/cmake-build-debug/CMakeFiles/baub_chess.dir/main.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")

@@ -251,6 +251,33 @@ ChessEngine/evaluation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/baub_chess.dir/build.make CMakeFiles/baub_chess.dir/ChessEngine/evaluation.cpp.s
 .PHONY : ChessEngine/evaluation.cpp.s
 
+ChessEngine/search.o: ChessEngine/search.cpp.o
+
+.PHONY : ChessEngine/search.o
+
+# target to build an object file
+ChessEngine/search.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/baub_chess.dir/build.make CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.o
+.PHONY : ChessEngine/search.cpp.o
+
+ChessEngine/search.i: ChessEngine/search.cpp.i
+
+.PHONY : ChessEngine/search.i
+
+# target to preprocess a source file
+ChessEngine/search.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/baub_chess.dir/build.make CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.i
+.PHONY : ChessEngine/search.cpp.i
+
+ChessEngine/search.s: ChessEngine/search.cpp.s
+
+.PHONY : ChessEngine/search.s
+
+# target to generate assembly for a file
+ChessEngine/search.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/baub_chess.dir/build.make CMakeFiles/baub_chess.dir/ChessEngine/search.cpp.s
+.PHONY : ChessEngine/search.cpp.s
+
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -299,6 +326,9 @@ help:
 	@echo "... ChessEngine/evaluation.o"
 	@echo "... ChessEngine/evaluation.i"
 	@echo "... ChessEngine/evaluation.s"
+	@echo "... ChessEngine/search.o"
+	@echo "... ChessEngine/search.i"
+	@echo "... ChessEngine/search.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
