@@ -17,7 +17,7 @@ It uses a combination of a 0x88 board representation, speed up by keeping a piec
 The engine features a functionnal CLI, while it patiently waits for UCI implementation.<br/>
 For now, only simple CPU vs Human play is possible in the console, the only documentation is the move notation, which goes as follows :<br/>
 <br/>
-<FROM><TO>-<FLAG><br/>
+FROMTO-FLAG<br/>
   <br/>
 With FROM and TO being the starting and landing squares respectively, and FLAG indicating the move type :<br/>
 QUIET               -> 00<br/>
