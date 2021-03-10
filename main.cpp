@@ -13,6 +13,8 @@ int main() {
     evaluation eval; //Initialize the tables of the evaluation function
     search search(eval);
 
+    cli::showLogo();
+
     display::showPosition(board);
 
     cli::mainMenu(board);
