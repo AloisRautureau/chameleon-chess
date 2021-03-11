@@ -272,7 +272,6 @@ public:
     void addToStack(movebits move);
 
     //Checks if the given square is under attack by the given side
-    bool sqAttacked(int sq, bool side);
     bool inCheck(bool side);
     bool checkmate();
     bool stalemate();
@@ -284,6 +283,9 @@ public:
     static int fromSq(movebits move);
     static int toSq(movebits move);
     static char getFlag(movebits move);
+
+    //Checks if a given square is attacked
+    bool sqAttackedMK2(int square, bool side);
 
     /*
      * Makes a move, as simple as that!
@@ -297,8 +299,6 @@ public:
 
     //Sets up the current board position to match the given FEN notation
     void setFEN(std::string fen);
-
-    bool sqAttackedMK2(int square, bool side);
 };
 
 

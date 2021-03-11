@@ -97,24 +97,24 @@ void board_representation::gen(){
     if(!m_side){
         if(m_castling & WKCASTLE
            && m_pieces[0x05] == EMPTY && m_pieces[0x06] == EMPTY
-           && !sqAttacked(0x05, BLACK) && !sqAttacked(0x06, BLACK) && !inCheck(WHITE)){
+           && !sqAttackedMK2(0x05, BLACK) && !sqAttackedMK2(0x06, BLACK) && !inCheck(WHITE)){
             addToStack(encodeMove(0x04, 0x06, KCASTLE));
         }
         if(m_castling & WQCASTLE
            && m_pieces[0x03] == EMPTY && m_pieces[0x02] == EMPTY && m_pieces[0x01] == EMPTY
-           && !sqAttacked(0x03, BLACK) && !sqAttacked(0x02, BLACK) && !sqAttacked(0x01, BLACK) && !inCheck(WHITE)){
+           && !sqAttackedMK2(0x03, BLACK) && !sqAttackedMK2(0x02, BLACK) && !sqAttackedMK2(0x01, BLACK) && !inCheck(WHITE)){
             addToStack(encodeMove(0x04, 0x02, QCASTLE));
         }
     }
     else {
         if (m_castling & BKCASTLE
             && m_pieces[0x75] == EMPTY && m_pieces[0x76] == EMPTY
-            && !sqAttacked(0x75, WHITE) && !sqAttacked(0x76, WHITE) && !inCheck(BLACK)) {
+            && !sqAttackedMK2(0x75, WHITE) && !sqAttackedMK2(0x76, WHITE) && !inCheck(BLACK)) {
             addToStack(encodeMove(0x74, 0x76, KCASTLE));
         }
         if (m_castling & BQCASTLE
             && m_pieces[0x73] == EMPTY && m_pieces[0x72] == EMPTY && m_pieces[0x71] == EMPTY
-            && !sqAttacked(0x73, WHITE) && !sqAttacked(0x72, WHITE) && !sqAttacked(0x71, WHITE) && !inCheck(BLACK)) {
+            && !sqAttackedMK2(0x73, WHITE) && !sqAttackedMK2(0x72, WHITE) && !sqAttackedMK2(0x71, WHITE) && !inCheck(BLACK)) {
             addToStack(encodeMove(0x74, 0x72, QCASTLE));
         }
     }
@@ -238,43 +238,6 @@ void board_representation::genNoisy() {
             }
         }
     }
-}
-
-
-bool board_representation::sqAttacked(int square, bool side) {
-    //Check for pawns first, since we don't really need to iterate those
-    for(int piece = 0; piece < 6; piece++){
-        int listSize = m_plist[side][piece].size();
-        for(int index = 0; index < listSize; index++){
-            int adress = m_plist[side][piece].get(index);
-
-            if(piece == PAWN){
-                if(!(adress + (side ? SW : NW) & 0x88) && adress + (side ? SW : NW) == square) return true;
-                if(!(adress + (side ? SE : NE) & 0x88) && adress + (side ? SE : NE) == square) return true;
-            }
-            else{
-                int currentSquare;
-                for(auto stepDirection : m_directions[piece]){
-                    if(stepDirection == 0) continue;
-                    currentSquare = adress;
-                    while(true){
-                        currentSquare += stepDirection;
-                        if(m_color[currentSquare] == m_side
-                           || (currentSquare & 0x88)) break;
-                        else if(m_color[currentSquare] == !m_side && m_pieces[currentSquare] != EMPTY){
-                            if(currentSquare == square) return true;
-                            break;
-                        }
-                        else{
-                            if(currentSquare == square) return true;
-                            if(!m_directions[0][piece]) break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return false;
 }
 
 bool board_representation::sqAttackedMK2(int square, bool side) {

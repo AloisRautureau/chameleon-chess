@@ -23,10 +23,10 @@ private:
     static int searchNode(int alpha, int beta, int depthLeft, board_representation &board);
 
     //Searches for a quiet position to minimize the impact of the event horizon
-    static int quiescence(int alpha, int beta);
+    static int quiescence(int alpha, int beta, board_representation &board);
 
 public:
-    search(evaluation &eval): eval(eval){};
+    explicit search(evaluation &eval): eval(eval){};
     //Calls searchNode recursively for every move generated in the root position, then compares the scores and
     //returns the highest scoring move
     static movebits bestMove(board_representation &board, int depth);
