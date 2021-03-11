@@ -16,20 +16,26 @@
 class search {
 private:
     evaluation &eval;
-    static board_representation &boardSearched;
+    board_representation &board;
 
     //Generates every move, then calls itself for each move.
     //At depthLeft = 0, it returns the quiescence evalutation of the current position
-    static int searchNode(int alpha, int beta, int depthLeft, board_representation &board);
+    int searchNode(int alpha, int beta, int depthLeft);
 
     //Searches for a quiet position to minimize the impact of the event horizon
-    static int quiescence(int alpha, int beta, board_representation &board);
+    int quiescence(int alpha, int beta);
 
 public:
-    explicit search(evaluation &eval): eval(eval){};
+    explicit search(board_representation &board, evaluation &eval): board(board), eval(eval){};
     //Calls searchNode recursively for every move generated in the root position, then compares the scores and
     //returns the highest scoring move
-    static movebits bestMove(board_representation &board, int depth);
+    movebits bestMove(int depth, std::vector<movebits> list = {}, int nodes = 0, int maxTime = 0, bool infinite = false);
+
+    //Searches a mate in x moves
+    movebits searchMate(int depth);
+
+    //Resets any info we have on the ongoing game to start fresh
+    void newGame();
 };
 
 
