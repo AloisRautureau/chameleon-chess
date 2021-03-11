@@ -1,3 +1,5 @@
+![alt text](https://github.com/AloisRautureau/chameleon-chess/blob/master/cameleon-icon.jpg?raw=true)
+
 # chameleon-chess
 
 chameleon-chess is the **chess engine** which will be powering up BAUB-Chess in the near future. The goal is to make it a fully functionnal, decent, and UCI compatible engine, optimized enough to run correctly on a Raspberry Pi.<br/>
