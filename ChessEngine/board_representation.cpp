@@ -121,7 +121,123 @@ void board_representation::gen(){
 }
 
 void board_representation::genNoisy() {
+    //We can use a neat tactic when generating checks, which is :
+    //- treating the opposite king as a queen, and generate an array with 4 values:
+    //- either the king can go there by moving diagonnaly (1)
+    //- or by moving in a line (2)
+    //- or by moving as a knight (3)
+    //- or not at all (0)
+    m_moveStackIndex = 0;
+    int possibleChecksArray[0x88]{0};
+    int enemyKing = m_plist[!m_side][KING].get(0);
+    int currentSquare;
+    int squareValue;
+    int adress;
+    int rankp;
+    for(auto stepDirection : m_directions[QUEEN]){
+        if(abs(stepDirection) == 7 || abs(stepDirection) == 9) squareValue = 1;
+        else squareValue = 2;
+        currentSquare = enemyKing; //Get the adress of the king
+        while(true){
+            currentSquare += stepDirection;
+            if(m_color[currentSquare] == m_side
+               || (currentSquare & 0x88) || m_pieces[currentSquare] != EMPTY) break;
+            else{
+                possibleChecksArray[currentSquare] = squareValue;
+            }
+        }
+    }
+    //Same for knight moves
+    for(auto stepDirection : m_directions[KNIGHT]){
+        if(stepDirection == 0) break;
+        currentSquare = enemyKing; //Get the adress of the king
+        currentSquare += stepDirection;
+        if(m_color[currentSquare] == m_side
+           || (currentSquare & 0x88) || m_pieces[currentSquare] != EMPTY) break;
+        else{
+            possibleChecksArray[currentSquare] = squareValue;
+        }
+    }
 
+    //Now, we generate captures AND pawn pushes that would attack the enemy king,
+    //as well as moves where a sliding piece/knight gets on a square that would put enemy king in check
+
+    for(int piece = 0; piece < 6; piece++){
+        for(int index = 0; index < m_plist[m_side][piece].size(); index++){
+            adress = m_plist[m_side][piece].get(index);
+            rankp = rank(adress);
+            if(piece == PAWN){
+                if(m_pieces[adress + (m_side ? S : N)] == EMPTY){
+                    if(m_pieces[adress + (2*(m_side ? S : N))] == EMPTY && rankp == (m_side ? 6 : 1)){ //Double push is available
+                        if(adress+(2*(m_side ? S : N))+NW == enemyKing || adress+(2*(m_side ? S : N))+NE == enemyKing){
+                            addToStack(encodeMove(adress, adress+(2*(m_side ? S : N)), DPAWNPUSH));
+                        }
+                    }
+                    if(rankp == (m_side ? 1 : 6)){ //That would be a promotion
+                        for(char i = 0; i < 4; i++){
+                            addToStack(encodeMove(adress, adress+(m_side ? S : N), NPROM+i));
+                        }
+                    }
+                    else{
+                        if(adress+(m_side ? S : N)+NW == enemyKing || adress+(m_side ? S : N)+NE == enemyKing){
+                            addToStack(encodeMove(adress, adress+(m_side ? S : N), QUIET));
+                        }
+                    }
+                }
+                if((m_color[adress + (m_side ? SW : NW)] == !m_side || adress + (m_side ? SW : NW) == m_ep) && !(adress+(m_side ? SW : NW) & 0x88)){ //Capture to the north west
+                    if(rankp == (m_side ? 1 : 6)){ //promo capture case
+                        for(char i = 0; i < 4; i++){
+                            addToStack(encodeMove(adress, adress+(m_side ? SW : NW), NPROMCAP+i));
+                        }
+                    }
+                    else if(adress + (m_side ? SW : NW) == m_ep){
+                        addToStack(encodeMove(adress, adress+(m_side ? SW : NW), EPCAP));
+                    }
+                    else if(m_color[adress + (m_side ? SW : NW)] == !m_side) {
+                        addToStack(encodeMove(adress, adress + (m_side ? SW : NW), CAP));
+                    }
+                }
+                if((m_color[adress + (m_side ? SE : NE)] == !m_side || adress + (m_side ? SE : NE) == m_ep) && !(adress+(m_side ? SE : NE) & 0x88)){ //Capture to the north east
+                    if(rankp == (m_side ? 1 : 6)){ //promo capture case
+                        for(char i = 0; i < 4; i++){
+                            addToStack(encodeMove(adress, adress+(m_side ? SE : NE), NPROMCAP+i));
+                        }
+                    }
+                    else if(adress + (m_side ? SE : NE) == m_ep){
+                        addToStack(encodeMove(adress, adress+(m_side ? SE : NE), EPCAP));
+                    }
+                    else if(m_color[adress + (m_side ? SE : NE)] == !m_side){
+                        addToStack(encodeMove(adress, adress+(m_side ? SE : NE), CAP));
+                    }
+                }
+            }
+                //Next we can deal with sliding piece generation
+            else{
+                for(auto stepDirection : m_directions[piece]){
+                    if(stepDirection == 0) continue;
+                    if(abs(stepDirection) == 7 || abs(stepDirection) == 9) squareValue = 1;
+                    else if(piece == KNIGHT) squareValue = 3;
+                    else if(piece == KING) squareValue = 4; //King can't check the other king
+                    else squareValue = 2;
+                    currentSquare = adress;
+                    while(true){
+                        currentSquare += stepDirection;
+                        if(m_color[currentSquare] == m_side
+                           || (currentSquare & 0x88)) break;
+                        else if(m_color[currentSquare] == !m_side && m_pieces[currentSquare] != EMPTY){
+                            addToStack(encodeMove(adress, currentSquare, CAP));
+                            break;
+                        }
+                        else{
+                            //Case where the move would be a check
+                            if(possibleChecksArray[currentSquare] == squareValue) addToStack(encodeMove(adress, currentSquare, QUIET));
+                            if(!m_directions[0][piece]) break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 

@@ -265,6 +265,8 @@ public:
     void gen();
     //Generates only captures/checking moves, useful during quiescence search
     void genNoisy();
+    //Generates only moves that get the king out of check
+    void genCheckEvasion();
 
     //Adds a move to the stack after checking whether or not it was legal
     void addToStack(movebits move);
