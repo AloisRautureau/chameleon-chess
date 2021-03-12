@@ -8,8 +8,7 @@
 #include "board_representation.h"
 #include "display.h"
 #include <chrono>
-
-class debug {
+class debug{
 public:
     static void perft(const board_representation &board);
 

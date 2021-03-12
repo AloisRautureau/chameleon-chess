@@ -101,7 +101,7 @@ movebits search::bestMove(int depth, std::vector<movebits> list, int nodes, int 
         }
     }
 
-
+    collectPV();
     return bestMove;
 }
 
@@ -126,8 +126,13 @@ int search::searchNode(int alpha, int beta, int depthLeft) {
             }
             board.takeback();
 
+            if(score < alpha && score > beta) storeTransposition(board.positionHash, depthLeft, score, EXACT_NODE, currentMove);
             if(score > alpha) alpha = score;
-            if(alpha >= beta) return alpha;
+            else storeTransposition(board.positionHash, depthLeft, score, ALPHA_NODE, currentMove);
+            if(alpha >= beta) {
+                storeTransposition(board.positionHash, depthLeft, score, BETA_NODE, currentMove);
+                return alpha;
+            }
             beta = alpha + 1;
         }
     }
@@ -152,23 +157,45 @@ int search::quiescence(int alpha, int beta) {
     int moveStackIndex{0};
     board.genNoisy(moveStack, moveStackIndex);
 
-    unsigned long long hash = board.positionHash;
-
     movebits currentMove{0};
     for(int move = 0; move < moveStackIndex; move++){
         currentMove = moveStack[move];
         if(board.make(currentMove)){
             int score = -quiescence(-beta, -alpha);
             board.takeback();
-            if(board.positionHash != hash){
-                std::cout << "The problem comes from the move " << std::hex << board_representation::fromSq(moveStack[move]) << " " << board_representation::toSq(moveStack[move]) << " " << std::dec << (int)board_representation::getFlag(moveStack[move]) << std::endl;
-                display::showPosition(board);
-                display::showPieceList(board);
-            }
 
             if(score >= beta) return beta;
             if(score > alpha) alpha = score;
         }
     }
     return alpha;
+}
+
+unsigned long long search::getTableIndex(unsigned long long int hash) {
+    return (hash%ttableSize);
+}
+
+void search::storeTransposition(unsigned long long int hash, int depth, int score, char flag, movebits response) {
+    int index = getTableIndex(hash);
+    if(m_ttable.depth[index] < depth){
+        m_ttable.hash[index] = hash;
+        m_ttable.depth[index] = depth;
+        m_ttable.score[index] = score;
+        m_ttable.flag[index] = flag;
+        m_ttable.response[index] = response;
+    }
+}
+
+void search::collectPV() {
+    int ttIndex = getTableIndex(board.positionHash);
+    do {
+        if(board.make(m_ttable.response[ttIndex])){
+            m_pv.pvMoves[m_pv.lenght++] = m_ttable.response[ttIndex];
+        }
+        else break;
+        ttIndex = getTableIndex(board.positionHash);
+    } while(m_ttable.hash[ttIndex] == board.positionHash);
+    for(int i = 0; i < m_pv.lenght; i++){
+        board.takeback();
+    }
 }

@@ -71,7 +71,6 @@ int display::squareToIndex(std::string square) {
 std::string display::displayMove(movebits move, bool showFlag) {
     std::string writtenMove{};
     writtenMove += indexToSquare(board_representation::fromSq(move));
-    writtenMove += " -> ";
     writtenMove += indexToSquare(board_representation::toSq(move));
 
     if(showFlag){
@@ -94,6 +93,14 @@ void display::showPieceList(board_representation &board){
         }
         std::cout << std::endl;
     }
+}
+
+void display::showPV(search &search) {
+    std::cout << "Principal variation : ";
+    for(int i = 0; i < search.m_pv.lenght; i++) {
+        std::cout << displayMove(search.m_pv.pvMoves[i]) << " ";
+    }
+    std::cout << std::endl;
 }
 
 

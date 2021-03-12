@@ -6,6 +6,7 @@
 #define BAUB_CHESS_DISPLAY_H
 
 #include "board_representation.h"
+#include "search.h"
 
 static const char pieceRepresentations[2][6] = {
         {'P', 'N', 'B', 'R', 'Q', 'K'},
@@ -30,6 +31,8 @@ public:
     static std::string displayMove(movebits move, bool showFlag = false);
 
     static void showPieceList(board_representation &board);
+
+    static void showPV(search &search);
 };
 
 
