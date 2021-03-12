@@ -12,9 +12,11 @@ int main() {
     evaluation eval; //Initialize the tables of the evaluation function
     search search(board, eval);
 
+    std::cout << display::displayMove(search.bestMove(6)) << std::endl;
+
     display::showPosition(board);
 
-    debug::perft(board);
+    //debug::perft(board);
 
     return 0;
 }

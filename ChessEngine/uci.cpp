@@ -42,7 +42,7 @@ void engineUCI::uciListen() {
             break;
         case ucinewgame: //DONE
             //Resets the search, notably any transposition table
-            m_search.newGame();
+           // m_search.newGame();
             break;
         case position: //DONE
             positionCommand(commandArguments);
@@ -195,7 +195,7 @@ void engineUCI::goCommand(std::vector<std::string> args) {
     movebits best;
     best = m_search.bestMove(maxDepth, moveList, nbNodes, time, infinite);
     int closestMate;
-    closestMate = m_search.searchMate(mateIn);
+    //closestMate = m_search.searchMate(mateIn);
 
     //Response to the GUI
 

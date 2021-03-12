@@ -67,10 +67,14 @@ int search::searchNode(int alpha, int beta, int depthLeft) {
         currentMove = moveStack[move];
         if(board.make(currentMove)){
             int score = -searchNode(-beta, -alpha, depthLeft-1);
+            if(score > alpha && score < beta && move > 0){
+                score = -searchNode(-beta, -alpha, depthLeft - 1); //Re search case
+            }
             board.takeback();
 
-            if(score >= beta) return beta;
             if(score > alpha) alpha = score;
+            if(alpha >= beta) return alpha;
+            beta = alpha + 1;
         }
     }
     return alpha;

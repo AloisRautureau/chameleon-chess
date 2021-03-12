@@ -8,7 +8,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include "../BuildTools/rpi/arm-linux-gnueabihf/include/c++/4.8.3/sstream"
+#include <sstream>
 #include "board_representation.h"
 #include "search.h"
 #include "evaluation.h"
