@@ -132,12 +132,19 @@ int search::quiescence(int alpha, int beta) {
     int moveStackIndex{0};
     board.genNoisy(moveStack, moveStackIndex);
 
+    unsigned long long hash = board.positionHash;
+
     movebits currentMove{0};
     for(int move = 0; move < moveStackIndex; move++){
         currentMove = moveStack[move];
         if(board.make(currentMove)){
             int score = -quiescence(-beta, -alpha);
             board.takeback();
+            if(board.positionHash != hash){
+                std::cout << "The problem comes from the move " << std::hex << board_representation::fromSq(moveStack[move]) << " " << board_representation::toSq(moveStack[move]) << " " << std::dec << (int)board_representation::getFlag(moveStack[move]) << std::endl;
+                display::showPosition(board);
+                display::showPieceList(board);
+            }
 
             if(score >= beta) return beta;
             if(score > alpha) alpha = score;

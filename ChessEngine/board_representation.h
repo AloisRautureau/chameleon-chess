@@ -8,6 +8,7 @@
 #include <iostream>
 #include <stack>
 #include <vector>
+#include <random>
 class display;
 class debug;
 class evaluation;
@@ -251,6 +252,16 @@ protected:
     movebits m_moveStack[256] = {0};
     int m_moveStackIndex = 0;
 
+    //Thats used for zobrist hashing of the position
+    //Keys
+    unsigned long long piecesKey[2][6][120];
+    unsigned long long whiteCastlingKeys[4];
+    unsigned long long blackCastlingKeys[4];
+    unsigned long long epKeys[120];
+    unsigned long long sideKey;
+
+    unsigned long long positionHash{0};
+
     friend display;
     friend debug;
     friend evaluation;
@@ -258,6 +269,9 @@ protected:
     friend cli;
 
 public:
+    //We use the constructor as a place to initialize zobrist keys notably
+    board_representation();
+
     /*
      * Generates all possible moves for the current side to move
      * TODO : Use table-driven generation to speed things up

@@ -53,6 +53,8 @@ void display::showPosition(const board_representation &board) {
     << (board.m_castling & WQCASTLE ? "Q" : "")
     << (board.m_castling & BKCASTLE ? "k" : "")
     << (board.m_castling & BQCASTLE ? "q" : "") << std::endl << std::endl;
+
+    std::cout << "Position hash : " << board.positionHash << std::endl << std::endl;
 }
 
 std::string display::indexToSquare(int index) {

@@ -8,6 +8,7 @@
 #include "board_representation.h"
 #include "evaluation.h"
 #include <chrono>
+#include "display.h"
 
 /*
  * The search function will feature alpha-beta search inside of a negamax framework as a starting point

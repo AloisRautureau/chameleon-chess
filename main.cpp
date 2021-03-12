@@ -14,9 +14,11 @@ int main() {
 
     display::showPosition(board);
 
-    std::cout << display::displayMove(search.bestMove(6)) << std::endl;
+    std::cout << display::displayMove(search.bestMove(8)) << std::endl;
 
-    //debug::perft(board);
+    display::showPosition(board);
+
+
 
     return 0;
 }

@@ -56,7 +56,7 @@ void debug::perft(const board_representation &board) {
     int mate = 0;
 
     std::cout << std::endl << std::endl;
-    for(int depth = 0; depth < 7; depth++){
+    for(int depth = 0; depth < 8; depth++){
         caps = 0;
         ep = 0;
         check = 0;

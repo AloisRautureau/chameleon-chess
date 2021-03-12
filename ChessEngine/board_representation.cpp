@@ -4,6 +4,42 @@
 
 #include "board_representation.h"
 
+board_representation::board_representation() {
+    //ZOBRIST KEYS INIT
+    std::mt19937_64 mersenneTwister(time(nullptr));
+    //Loop over every entry in the zobrist key arrays
+    for(int side = WHITE; side < BLACK + 1; side++){
+        for(int pieceType = PAWN; pieceType < EMPTY; pieceType++){
+            for(int sq = 0; sq < 120; sq++){
+                piecesKey[side][pieceType][sq] = mersenneTwister();
+            }
+        }
+    }
+    for(int i = 0; i < 16; i++){
+        whiteCastlingKeys[i] = mersenneTwister();
+        blackCastlingKeys[i] = mersenneTwister();
+    }
+    for(unsigned long long & epKey : epKeys){
+        epKey = mersenneTwister();
+    }
+
+    sideKey = mersenneTwister();
+
+    //POSITION HASH INIT
+    //Loop all squares of the board
+    for(int sq = 0; sq < 120; sq++){
+        char pieceType = m_pieces[sq];
+        char side = m_color[sq];
+        if(sq & 0x88 || pieceType == EMPTY) continue;
+        positionHash ^= piecesKey[side][pieceType][sq];
+    }
+    positionHash ^= whiteCastlingKeys[(m_castling >> 2)];
+    positionHash ^= blackCastlingKeys[(m_castling & 0b0011)];
+
+    if(m_ep != 0x88) positionHash ^= epKeys[m_ep];
+    if(m_side) positionHash ^= sideKey;
+}
+
 void board_representation::gen(movebits stack[], int &stackIndx){
     m_moveStackIndex = 0;
     int adress;
@@ -184,7 +220,7 @@ void board_representation::genNoisy(movebits stack[], int &stackIndx) {
                         }
                     }
                 }
-                if((m_color[adress + (m_side ? SW : NW)] == !m_side || adress + (m_side ? SW : NW) == m_ep) && !(adress+(m_side ? SW : NW) & 0x88)){ //Capture to the north west
+                if(((m_color[adress + (m_side ? SW : NW)] == !m_side || adress + (m_side ? SW : NW) == m_ep)) && !(adress+(m_side ? SW : NW) & 0x88)){ //Capture to the north west
                     if(rankp == (m_side ? 1 : 6)){ //promo capture case
                         for(char i = 0; i < 4; i++){
                             addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? SW : NW), NPROMCAP+i));
@@ -197,7 +233,7 @@ void board_representation::genNoisy(movebits stack[], int &stackIndx) {
                         addToStack(stack, stackIndx, encodeMove(adress, adress + (m_side ? SW : NW), CAP));
                     }
                 }
-                if((m_color[adress + (m_side ? SE : NE)] == !m_side || adress + (m_side ? SE : NE) == m_ep) && !(adress+(m_side ? SE : NE) & 0x88)){ //Capture to the north east
+                if(((m_color[adress + (m_side ? SE : NE)] == !m_side || adress + (m_side ? SE : NE) == m_ep)) && !(adress+(m_side ? SE : NE) & 0x88)){ //Capture to the north east
                     if(rankp == (m_side ? 1 : 6)){ //promo capture case
                         for(char i = 0; i < 4; i++){
                             addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? SE : NE), NPROMCAP+i));
@@ -332,21 +368,31 @@ bool board_representation::make(movebits move) {
 
     //First we update state variables
     if(pieceMoving == KING){
+        positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
         m_castling &= !m_side ? 0b0011 : 0b1100;
+        positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
     }
     if(pieceMoving == ROOK){
         if(file(from) == 7){
+            positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
             m_castling &= !m_side ? 0b0111 : 0b1101;
+            positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
         }
-        if(file(from) == 0){
+        else if(file(from) == 0){
+            positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
             m_castling &= !m_side ? 0b1011 : 0b1110;
+            positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
         }
     }
 
     if(!(mvFlag & CAP || pieceMoving == PAWN)) m_halfclock++;
     else m_halfclock = 0;
 
-    if(mvFlag == DPAWNPUSH) m_ep = to + (!m_side ? S : N);
+    if(m_ep != inv) positionHash ^= epKeys[m_ep];
+    if(mvFlag == DPAWNPUSH) {
+        m_ep = to + (!m_side ? S : N);
+        positionHash ^= epKeys[m_ep];
+    }
     else m_ep = inv;
 
     m_ply++;
@@ -360,18 +406,25 @@ bool board_representation::make(movebits move) {
     m_pieces[from] = EMPTY;
     m_color[from] = EMPTY;
 
+    //Update zobrist hash
+    positionHash ^= piecesKey[m_side][pieceMoving][from];
+    positionHash ^= piecesKey[m_side][pieceMoving][to];
+
     //We also need to update the pieceLists
     m_plist[m_side][pieceMoving].remove(from);
     m_plist[m_side][pieceMoving].add(to);
-    if(mvFlag == CAP){
-        m_plist[!m_side][pieceTaken].remove(to);
-    }
-
-    //We can now take care of special flags, like castling and promotions
-    if(mvFlag == EPCAP){
-        m_pieces[to + (m_side ? N : S)] = EMPTY;
-        m_color[to + (m_side ? N : S)] = EMPTY;
-        m_plist[!m_side][PAWN].remove(to + (m_side ? N : S));
+    if(mvFlag & 0b0100){
+        //We can now take care of special flags, like castling and promotions
+        if(mvFlag == EPCAP){
+            m_pieces[to + (m_side ? N : S)] = EMPTY;
+            m_color[to + (m_side ? N : S)] = EMPTY;
+            positionHash ^= piecesKey[!m_side][PAWN][to + (m_side ? N : S)];
+            m_plist[!m_side][PAWN].remove(to + (m_side ? N : S));
+        }
+        else{
+            positionHash ^= piecesKey[!m_side][pieceTaken][to];
+            m_plist[!m_side][pieceTaken].remove(to);
+        }
     }
 
     if(mvFlag == KCASTLE) {
@@ -382,6 +435,8 @@ bool board_representation::make(movebits move) {
         m_pieces[arrivalAdress] = ROOK;
         m_color[arrivalAdress] = m_side;
 
+        positionHash ^= piecesKey[m_side][ROOK][rookAdress];
+        positionHash ^= piecesKey[m_side][ROOK][arrivalAdress];
         m_plist[m_side][ROOK].remove(rookAdress);
         m_plist[m_side][ROOK].add(arrivalAdress);
     }
@@ -393,6 +448,8 @@ bool board_representation::make(movebits move) {
         m_pieces[arrivalAdress] = ROOK;
         m_color[arrivalAdress] = m_side;
 
+        positionHash ^= piecesKey[m_side][ROOK][rookAdress];
+        positionHash ^= piecesKey[m_side][ROOK][arrivalAdress];
         m_plist[m_side][ROOK].remove(rookAdress);
         m_plist[m_side][ROOK].add(arrivalAdress);
     }
@@ -415,13 +472,17 @@ bool board_representation::make(movebits move) {
         }
 
         m_pieces[to] = targetPiece;
-        m_color[to] = m_side;
+
+        positionHash ^= piecesKey[m_side][PAWN][to];
+        positionHash ^= piecesKey[m_side][targetPiece][to];
+
         m_plist[m_side][PAWN].remove(to);
         m_plist[m_side][targetPiece].add(to);
     }
 
     //Now that we're finished we can change the side to move
     m_side ^= 1;
+    positionHash ^= sideKey;
 
     if(inCheck(!m_side)){
         takeback();
@@ -435,6 +496,7 @@ void board_representation::takeback() {
     //We start off by setting back whatever comes naturally, that is ply and sideToMove since those always change the same way
     m_ply--;
     m_side ^= 1;
+    positionHash ^= sideKey;
 
     /*
      * After that we'll need :
@@ -466,6 +528,11 @@ void board_representation::takeback() {
         }
 
         m_pieces[to] = PAWN;
+        movedPiece = m_pieces[to];
+
+        positionHash ^= piecesKey[m_side][targetPiece][to];
+        positionHash ^= piecesKey[m_side][PAWN][to];
+
         m_plist[m_side][targetPiece].remove(to);
         m_plist[m_side][PAWN].add(to);
     }
@@ -479,6 +546,8 @@ void board_representation::takeback() {
         m_pieces[arrivalAdress] = ROOK;
         m_color[arrivalAdress] = m_side;
 
+        positionHash ^= piecesKey[m_side][ROOK][rookAdress];
+        positionHash ^= piecesKey[m_side][ROOK][arrivalAdress];
         m_plist[m_side][ROOK].remove(rookAdress);
         m_plist[m_side][ROOK].add(arrivalAdress);
     }
@@ -490,37 +559,50 @@ void board_representation::takeback() {
         m_pieces[arrivalAdress] = ROOK;
         m_color[arrivalAdress] = m_side;
 
+        positionHash ^= piecesKey[m_side][ROOK][rookAdress];
+        positionHash ^= piecesKey[m_side][ROOK][arrivalAdress];
         m_plist[m_side][ROOK].remove(rookAdress);
         m_plist[m_side][ROOK].add(arrivalAdress);
     }
 
-    //Undo the actual move
-    m_pieces[from] = m_pieces[to];
-    m_color[from] = m_side;
+    //Update position hash BEFORE unmaking the move
     m_pieces[to] = EMPTY;
     m_color[to] = EMPTY;
-
-    m_plist[m_side][movedPiece].remove(to);
-    m_plist[m_side][movedPiece].add(from);
-
-    //Place back the piece if capture, otherwise clean the square
-    if(mvFlag & CAP){
-        if(mvFlag == EPCAP) {
-            m_pieces[to + (!m_side ? S : N)] = PAWN;
-            m_color[to + (!m_side ? S : N)] = !m_side;
-            m_plist[!m_side][PAWN].add(to + (!m_side ? S : N));
+    if(mvFlag & 0b0100){
+        if(mvFlag == EPCAP){
+            m_pieces[to + (m_side ? N : S)] = PAWN;
+            m_color[to + (m_side ? N : S)] = !m_side;
+            positionHash ^= piecesKey[!m_side][PAWN][to + (m_side ? N : S)];
+            m_plist[!m_side][PAWN].add(to + (m_side ? N : S));
         }
-        else {
+        else{
             m_pieces[to] = pieceTaken;
             m_color[to] = !m_side;
+            positionHash ^= piecesKey[!m_side][pieceTaken][to];
             m_plist[!m_side][pieceTaken].add(to);
         }
     }
 
+
+    //Undo the actual move
+    m_pieces[from] = movedPiece;
+    m_color[from] = m_side;
+
+    m_plist[m_side][movedPiece].remove(to);
+    m_plist[m_side][movedPiece].add(from);
+
+    positionHash ^= piecesKey[m_side][movedPiece][to];
+    positionHash ^= piecesKey[m_side][movedPiece][from];
     //We also must set back the castling rights and halfmove clock
-    m_castling = m_takebackInfo.top().castling;
-    m_halfclock = m_takebackInfo.top().halfmove;
+    if(m_ep != inv) positionHash ^= epKeys[m_ep];
     m_ep = m_takebackInfo.top().ep;
+    if(m_ep != inv) positionHash ^= epKeys[m_ep];
+
+    positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
+    m_castling = m_takebackInfo.top().castling;
+    positionHash ^= m_side ? blackCastlingKeys[(m_castling & 0b0011)] : whiteCastlingKeys[m_castling >> 2];
+
+    m_halfclock = m_takebackInfo.top().halfmove;
 
     //finally we can just pop the top of the takeback stack
     m_takebackInfo.pop();
@@ -687,4 +769,5 @@ bool board_representation::stalemate() {
 void board_representation::addToStack(movebits stack[], int &stackIndx, movebits move) {
     stack[stackIndx++] = move;
 }
+
 
