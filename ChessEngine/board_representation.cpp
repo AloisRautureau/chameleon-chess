@@ -613,6 +613,11 @@ void board_representation::takeback() {
 }
 
 void board_representation::setFEN(std::string fen) {
+    //Changing the FEN string means resetting the move history to avoid bugs
+    while(!m_takebackInfo.empty()){
+        m_takebackInfo.pop();
+    }
+
     //Split the FEN string into different sections
     std::string boardData[8]{"", "", "", "", "", "", "", ""};
     int boardDataIndex = 0;

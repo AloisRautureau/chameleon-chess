@@ -4,4 +4,4 @@ project(chameleon)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(chameleon main.cpp
-        ChessEngine/board_representation.cpp ChessEngine/board_representation.h ChessEngine/misc.h ChessEngine/display.cpp ChessEngine/display.h ChessEngine/debug.cpp ChessEngine/debug.h ChessEngine/evaluation.cpp ChessEngine/evaluation.h ChessEngine/search.cpp ChessEngine/search.h)
+        ChessEngine/board_representation.cpp ChessEngine/board_representation.h ChessEngine/display.cpp ChessEngine/display.h ChessEngine/debug.cpp ChessEngine/debug.h ChessEngine/evaluation.cpp ChessEngine/evaluation.h ChessEngine/search.cpp ChessEngine/search.h)

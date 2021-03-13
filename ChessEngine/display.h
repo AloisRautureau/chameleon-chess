@@ -32,7 +32,7 @@ public:
 
     static void showPieceList(board_representation &board);
 
-    static void showPV(search &search);
+    static void showPV();
 };
 
 

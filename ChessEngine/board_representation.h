@@ -10,10 +10,6 @@
 #include <vector>
 #include <random>
 class display;
-class debug;
-class evaluation;
-class search;
-class engineUCI;
 
 /*
  * This class is the representation of a board state.
@@ -128,7 +124,7 @@ public:
 };
 
 class board_representation {
-protected:
+public:
     /*
      * We use a comination of two 0x88 boards to keep track of colors, and piece type respectively
      * The boards use Little-Endian Rank-File mapping (LERF for short), a fancy way of saying a1 = 0, b1 = 1... and h8 = 63
@@ -269,12 +265,7 @@ protected:
     unsigned long long positionHash{0};
 
     friend display;
-    friend debug;
-    friend evaluation;
-    friend search;
-    friend engineUCI;
 
-public:
     //We use the constructor as a place to initialize zobrist keys notably
     board_representation();
 

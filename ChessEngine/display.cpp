@@ -4,6 +4,8 @@
 
 #include "display.h"
 
+using namespace Chameleon;
+
 void display::showPosition(const board_representation &board) {
     int square;
     std::cout << std::endl << (board.m_side == WHITE ? "White " : "Black ") << "to move!" << std::endl << std::endl;
@@ -95,10 +97,11 @@ void display::showPieceList(board_representation &board){
     }
 }
 
-void display::showPV(search &search) {
+void display::showPV() {
     std::cout << "Principal variation : ";
-    for(int i = 0; i < search.m_pv.lenght; i++) {
-        std::cout << displayMove(search.m_pv.pvMoves[i]) << " ";
+    std::vector<movebits> pv = Search::getPV();
+    for(int i = 0; i < pv.size(); i++) {
+        std::cout << displayMove(pv[i]) << " ";
     }
     std::cout << std::endl;
 }

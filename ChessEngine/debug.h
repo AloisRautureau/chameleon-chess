@@ -8,17 +8,18 @@
 #include "board_representation.h"
 #include "display.h"
 #include <chrono>
-class debug{
-public:
-    static void perft(const board_representation &board);
 
-    static unsigned long long int
-    perftRecursive(int depth, board_representation board, int* caps, int* ep, int* castles, int* prom, int* check, int* mate);
+namespace Chameleon{
+    namespace Debug {
+        void perft(const board_representation &board);
 
-    static void perftDivide(board_representation &board);
+        unsigned long long int
+        perftRecursive(int depth, board_representation board, int* caps, int* ep, int* castles, int* prom, int* check, int* mate);
 
-    static void perftSuite(board_representation &board, const std::vector<std::string>& fenStack);
-};
+        void perftDivide(board_representation &board);
 
+        void perftSuite(board_representation &board, const std::vector<std::string>& fenStack);
+    }
+}
 
 #endif //BAUB_CHESS_DEBUG_H

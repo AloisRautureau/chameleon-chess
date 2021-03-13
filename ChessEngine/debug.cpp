@@ -4,7 +4,7 @@
 
 #include "debug.h"
 
-unsigned long long debug::perftRecursive(int depth, board_representation board, int * caps, int* ep, int* castles, int* prom, int* check, int* mate) {
+unsigned long long Chameleon::Debug::perftRecursive(int depth, board_representation board, int* caps, int* ep, int* castles, int* prom, int* check, int* mate) {
     if (depth == 0) return 1;
     movebits stack[256];
     int stackIndex = 0;
@@ -46,7 +46,7 @@ unsigned long long debug::perftRecursive(int depth, board_representation board, 
     return nodes;
 }
 
-void debug::perft(const board_representation &board) {
+void Chameleon::Debug::perft(const board_representation &board) {
     //Initialize counting variables
     int ep = 0;
     int caps = 0;
@@ -73,7 +73,7 @@ void debug::perft(const board_representation &board) {
 
         //Display the results
         std::cout << "Nodes searched at depth " << depth << " : " << nodes << " in " << duration.count()*0.000001 << " seconds ("
-        << nodes/(duration.count()*0.000001) << " nps)" << std::endl <<std::endl;
+                  << nodes/(duration.count()*0.000001) << " nps)" << std::endl <<std::endl;
         std::cout << "             NODES " << std::endl;
         std::cout << "             ----- " << std::endl;
         std::cout << "CAPTURES     " << caps << std::endl;
@@ -85,7 +85,7 @@ void debug::perft(const board_representation &board) {
     }
 }
 
-void debug::perftDivide(board_representation &board){
+void Chameleon::Debug::perftDivide(board_representation &board){
     //Initialize counting variables
     int ep = 0;
     int caps = 0;
@@ -117,9 +117,9 @@ void debug::perftDivide(board_representation &board){
     }
 }
 
-void debug::perftSuite(board_representation &board, const std::vector<std::string>& fenStack) {
+void Chameleon::Debug::perftSuite(board_representation &board, const std::vector<std::string>& fenStack) {
     int counter = 0;
-    for(const std::string& fen : fenStack){
+    for (const std::string &fen : fenStack) {
         board.setFEN(fen);
         std::cout << "##### POSITION " << ++counter << " #####" << std::endl << std::endl;
         display::showPosition(board);

@@ -4,7 +4,33 @@
 
 #include "search.h"
 
-movebits search::bestMove(int depth, std::vector<movebits> list, int nodes, int maxTime, bool infinite) {
+namespace {
+    board_representation board;
+    //The transposition table, used to store already reached positions to avoid reacalculating everything
+    const unsigned long long ttableSize = 1048583;
+    struct ttable {
+        unsigned long long *hash = new unsigned long long[ttableSize]{0}; //The complete hash for the position
+        int *depth = new int[ttableSize]{0}; //The depth at which the position was reached
+        int *score = new int[ttableSize]{0}; //The calculated score
+        char *flag = new char[ttableSize]{0}; //Type of entry
+        movebits *response = new movebits[ttableSize]{0}; //Best move to respond with
+    } m_ttable;
+
+    const char EXACT_NODE = 0,
+            BETA_NODE = 1,
+            ALPHA_NODE = 2;
+
+    struct pv {
+        int lenght;
+        movebits pvMoves[16];
+    } m_pv;
+}
+
+void Chameleon::Search::init(board_representation boardToSearch){
+    boardToSearch = board;
+}
+
+movebits Chameleon::Search::bestMove(int depth, std::vector<movebits> list, int nodes, int maxTime, bool infinite) {
 
     std::string uciResponse;
     movebits bestMove{0};
@@ -106,7 +132,7 @@ movebits search::bestMove(int depth, std::vector<movebits> list, int nodes, int 
     return bestMove;
 }
 
-int search::searchNode(int alpha, int beta, int depthLeft) {
+int Chameleon::Search::searchNode(int alpha, int beta, int depthLeft) {
     //If there is no depth left, we return the evaluation of the current position
     if(!depthLeft) {
         return quiescence(alpha, beta);
@@ -140,8 +166,8 @@ int search::searchNode(int alpha, int beta, int depthLeft) {
     return alpha;
 }
 
-int search::quiescence(int alpha, int beta) {
-    int stand_pat = evaluation::eval(board);
+int Chameleon::Search::quiescence(int alpha, int beta) {
+    int stand_pat = Chameleon::Evaluation::eval(board);
     if(stand_pat >= beta){
         return stand_pat;
     }
@@ -172,11 +198,11 @@ int search::quiescence(int alpha, int beta) {
     return alpha;
 }
 
-unsigned long long search::getTableIndex(unsigned long long int hash) {
+unsigned long long Chameleon::Search::getTableIndex(unsigned long long int hash) {
     return (hash%ttableSize);
 }
 
-void search::storeTransposition(unsigned long long int hash, int depth, int score, char flag, movebits response) {
+void Chameleon::Search::storeTransposition(unsigned long long int hash, int depth, int score, char flag, movebits response) {
     int index = getTableIndex(hash);
     if(m_ttable.depth[index] < depth){
         m_ttable.hash[index] = hash;
@@ -187,7 +213,7 @@ void search::storeTransposition(unsigned long long int hash, int depth, int scor
     }
 }
 
-void search::collectPV() {
+void Chameleon::Search::collectPV() {
     int ttIndex = getTableIndex(board.positionHash);
     do {
         if(board.make(m_ttable.response[ttIndex])){
@@ -201,15 +227,24 @@ void search::collectPV() {
     }
 }
 
-void search::newGame() {
+std::vector<movebits> Chameleon::Search::getPV(){
+    std::vector<movebits> line;
+    for(int i =0; i < m_pv.lenght; i++){
+        line.push_back(m_pv.pvMoves[i]);
+    }
+    return line;
+}
+
+void Chameleon::Search::newGame() {
     m_ttable.hash = {};
     m_ttable.response = {};
     m_ttable.depth = {};
     m_ttable.score = {};
     m_ttable.flag = {};
+    board.setFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 }
 
-int search::timeManagement(int timeleft, int increment) {
+int Chameleon::Search::timeManagement(int timeleft, int increment) {
     //Spend max 5% of remaining time on the move
     float timeToMove = timeleft/25 + (increment/2);
 
