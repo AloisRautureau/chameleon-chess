@@ -243,6 +243,8 @@ public:
     int m_ply = 1;
     int m_ep = inv;
     std::stack<takebackInfo> m_takebackInfo;
+    bool check = false;
+    int checkmate = -1;
 
     //Time control variables
     int m_wtime = -1;
@@ -272,14 +274,20 @@ public:
     //Generates only captures/checking moves, useful during quiescence search
     void genNoisy(movebits stack[], int &stackIndx);
     //Generates only moves that get the king out of check
-    void genCheckEvasion(movebits stack[], int &stackIndx);
+    void checkEvasion(movebits stack[], int &stackIndx);
+
+    //Returns the pin delta ray if the piece on the given square is pinned, 0 if it isn't or no piece
+    int isPinned(int square);
+    //This function verifies the legality of ep captures, in case they would lead to a discovered check.
+    //Those are particular because two pawns disappear from the same rank, this cannot be detected by
+    //the pinned function
+    bool isLegalEp(int from, int to, bool side);
 
     //Adds a move to the stack after checking whether or not it was legal
     static void addToStack(movebits stack[], int &stackIndx, movebits move);
 
     //Checks if the given square is under attack by the given side
     bool inCheck(bool side);
-    bool checkmate();
     bool stalemate();
 
     //Encodes a move on 16bits
@@ -291,14 +299,14 @@ public:
     static char getFlag(movebits move);
 
     //Checks if a given square is attacked
-    bool sqAttackedMK2(int square, bool side);
+    bool sqAttackedMK2(int square, bool side, bool kXray = false);
 
     /*
      * Makes a move, as simple as that!
      * Careful tho, it doesn't really check whether or not the move is legal. If you tell the make function to move a bishop
      * from a1 to b1, it will make the move.
      */
-    bool make(movebits move);
+    void make(movebits move);
 
     //Takes back the last move made
     void takeback();

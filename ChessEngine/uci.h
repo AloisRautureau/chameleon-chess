@@ -16,6 +16,7 @@
 #include <iostream>
 #include <thread>
 #include "search.h"
+#include "debug.h"
 
 namespace Chameleon{
     namespace UCI{

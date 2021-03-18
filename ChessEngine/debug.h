@@ -8,17 +8,16 @@
 #include "position.h"
 #include "display.h"
 #include <chrono>
+#include <map>
 
 namespace Chameleon{
     namespace Debug {
         void perft(const position &board);
 
         unsigned long long int
-        perftRecursive(int depth, position board, int* caps, int* ep, int* castles, int* prom, int* check, int* mate);
+        perftRecursive(int depth, position board);
 
         void perftDivide(position &board);
-
-        void perftSuite(position &board, const std::vector<std::string>& fenStack);
     }
 }
 

@@ -61,26 +61,25 @@ namespace Chameleon{
             for(int depth = 1; depth < maxdepth; depth++){
                 for(int i = 0; i < mvStackIndx; i++){
                     currentMove = mvStack[i];
-                    if(position.make(currentMove)){
-                        maxNodes--;
+                    position.make(currentMove);
+                    maxNodes--;
+                    currentScore = -searchNode(position, -beta, -alpha, depth - 1, maxNodes, maxTime);
+
+                    //The bad side of aspiration windows: to make sure we don't miss stuff, if the score is too far
+                    //we need to recalculate, because our window isn't good
+                    if(currentScore <= alpha || currentScore >= beta){
+                        //Reset alpha and beta
+                        alpha = -99999;
+                        beta = 99999;
+                        aspirationWindow *= 10;
                         currentScore = -searchNode(position, -beta, -alpha, depth - 1, maxNodes, maxTime);
+                    }
+                    position.takeback();
 
-                        //The bad side of aspiration windows: to make sure we don't miss stuff, if the score is too far
-                        //we need to recalculate, because our window isn't good
-                        if(currentScore <= alpha || currentScore >= beta){
-                            //Reset alpha and beta
-                            alpha = -99999;
-                            beta = 99999;
-                            aspirationWindow *= 10;
-                            currentScore = -searchNode(position, -beta, -alpha, depth - 1, maxNodes, maxTime);
-                        }
-                        position.takeback();
-
-                        //If the best score is less than what we got, we got ourselvs a new best move!
-                        if(currentScore > iterationScore){
-                            iterationScore = currentScore;
-                            iterationBest = currentMove;
-                        }
+                    //If the best score is less than what we got, we got ourselvs a new best move!
+                    if(currentScore > iterationScore){
+                        iterationScore = currentScore;
+                        iterationBest = currentMove;
                     }
                     nodesSearched = (0xFFFFFFFFFFFFFFFF-maxNodes);
                     timeSpent = (int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
@@ -126,26 +125,25 @@ namespace Chameleon{
             int copyBeta = beta;
             int score;
             for(int i = 0; i < mvStackIndx; i++){
-                if(position.make(mvStack[i])){
-                    score = -searchNode(position, -copyBeta, -alpha, depthLeft - 1, maxNodes, maxTime);
+                position.make(mvStack[i]);
+                score = -searchNode(position, -copyBeta, -alpha, depthLeft - 1, maxNodes, maxTime);
 
-                    //That's part of negascout implementation, it adds up to alpha-beta by using a window
-                    //Basically, it increases the chances of a cutoff, but we need to re search if a score is out of the window
-                    if(score > alpha && score < beta && i){
-                        score = -searchNode(position, -beta, -alpha, depthLeft - 1, maxNodes, maxTime);
-                    }
-                    position.takeback();
-
-                    //Then it's just normal alpha beta stuff
-                    if(alpha < score){
-                        alpha = score;
-                    }
-                    if(alpha >= beta){
-                        return alpha;
-                    }
-
-                    beta = alpha + 1; //We change the window for negascout
+                //That's part of negascout implementation, it adds up to alpha-beta by using a window
+                //Basically, it increases the chances of a cutoff, but we need to re search if a score is out of the window
+                if(score > alpha && score < beta && i){
+                    score = -searchNode(position, -beta, -alpha, depthLeft - 1, maxNodes, maxTime);
                 }
+                position.takeback();
+
+                //Then it's just normal alpha beta stuff
+                if(alpha < score){
+                    alpha = score;
+                }
+                if(alpha >= beta){
+                    return alpha;
+                }
+
+                beta = alpha + 1; //We change the window for negascout
             }
             return alpha;
         }
@@ -175,17 +173,16 @@ namespace Chameleon{
             position.genNoisy(mvStack, mvStackIndx);
 
             for(int i = 0; i < mvStackIndx; i++){
-                if(position.make(mvStack[i])){
-                    score = -quiescence(position, -beta, -alpha, maxTime);
-                    position.takeback();
+                position.make(mvStack[i]);
+                score = -quiescence(position, -beta, -alpha, maxTime);
+                position.takeback();
 
-                    //Then it's just normal alpha beta stuff
-                    if(alpha < score){
-                        alpha = score;
-                    }
-                    if(score >= beta){
-                        return beta;
-                    }
+                //Then it's just normal alpha beta stuff
+                if(alpha < score){
+                    alpha = score;
+                }
+                if(score >= beta){
+                    return beta;
                 }
             }
             return alpha;

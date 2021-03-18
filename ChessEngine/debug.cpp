@@ -4,68 +4,29 @@
 
 #include "debug.h"
 
-unsigned long long Chameleon::Debug::perftRecursive(int depth, position board, int* caps, int* ep, int* castles, int* prom, int* check, int* mate) {
-    if (depth == 0) return 1;
+unsigned long long Chameleon::Debug::perftRecursive(int depth, position board) {
     movebits stack[256];
     int stackIndex = 0;
     unsigned long long nodes = 0;
     board.gen(stack, stackIndex);
+    if(depth == 1) return stackIndex;
 
     //For each move, make the move, then unmake it
     //We also increment the corresponding node counter
     for (int i = 0; i < stackIndex; i++) {
-        if (board.make(stack[i])) {
-            switch (position::getFlag(stack[i])) {
-                case CAP:
-                    *caps += 1;
-                    break;
-                case EPCAP:
-                    *ep += 1;
-                    break;
-                case KCASTLE:
-                case QCASTLE:
-                    *castles += 1;
-                    break;
-                case NPROM:
-                case BPROM:
-                case RPROM:
-                case QPROM:
-                case NPROMCAP:
-                case BPROMCAP:
-                case RPROMCAP:
-                case QPROMCAP:
-                    *prom += 1;
-                    break;
-                default:
-                    break;
-            }
-            nodes += perftRecursive(depth - 1, board, caps, ep, castles, prom, check, mate);
-            board.takeback();
-        }
+        board.make(stack[i]);
+        nodes += perftRecursive(depth - 1, board);
+        board.takeback();
     }
     return nodes;
 }
 
 void Chameleon::Debug::perft(const position &board) {
-    //Initialize counting variables
-    int ep = 0;
-    int caps = 0;
-    int castles = 0;
-    int prom = 0;
-    int check = 0;
-    int mate = 0;
-
     std::cout << std::endl << std::endl;
-    for(int depth = 0; depth < 7; depth++){
-        caps = 0;
-        ep = 0;
-        check = 0;
-        mate = 0;
-        prom = 0;
-        castles = 0;
+    for(int depth = 1; depth < 7; depth++){
         auto start = std::chrono::high_resolution_clock::now(); //Get starting time
 
-        auto nodes = perftRecursive(depth, board, &caps, &ep, &castles, &prom, &check, &mate);
+        auto nodes = perftRecursive(depth, board);
 
         auto end = std::chrono::high_resolution_clock::now(); //Get ending time
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -74,27 +35,11 @@ void Chameleon::Debug::perft(const position &board) {
         //Display the results
         std::cout << "Nodes searched at depth " << depth << " : " << nodes << " in " << duration.count()*0.000001 << " seconds ("
                   << nodes/(duration.count()*0.000001) << " nps)" << std::endl <<std::endl;
-        std::cout << "             NODES " << std::endl;
-        std::cout << "             ----- " << std::endl;
-        std::cout << "CAPTURES     " << caps << std::endl;
-        std::cout << "EN_PASSANT   " << ep << std::endl;
-        std::cout << "PROMOTIONS   " << prom << std::endl;
-        std::cout << "CASTLES      " << castles << std::endl;
-        std::cout << "CHECKS       " << check << std::endl;
-        std::cout << "CHECKMATES   " << mate << std::endl << std::endl << std::endl;
     }
 }
 
 void Chameleon::Debug::perftDivide(position &board){
-    //Initialize counting variables
-    int ep = 0;
-    int caps = 0;
-    int castles = 0;
-    int prom = 0;
-    int check = 0;
-    int mate = 0;
-
-    for(int depth = 1; depth < 8; depth++){
+    for(int depth = 2; depth < 8; depth++){
         unsigned long long totalNodes = 0;
         std::cout << "Nodes searched at depth " << depth << std::endl << std::endl;
         //We need to make each first move, then count nodes from here
@@ -102,28 +47,17 @@ void Chameleon::Debug::perftDivide(position &board){
         int stackIndex = 0;
         board.gen(stack, stackIndex);
 
-        std::cout << "  MOVE     NODES" << std::endl;
-        std::cout << "  ----     -----" << std::endl;
+        std::cout << "MOVE     NODES" << std::endl;
+        std::cout << "----     -----" << std::endl;
         for(int i = 0; i < stackIndex; i++){
             board.make(stack[i]);
             unsigned long long nodes;
-            nodes = perftRecursive(depth-1, board, &caps, &ep, &castles, &prom, &check, &mate);
+            nodes = perftRecursive(depth-1, board);
             totalNodes += nodes;
             std::cout << display::displayMove(stack[i]) << "   " << nodes << std::endl;
             board.takeback();
         }
         std::cout << "Total at depth " << depth << " : " << totalNodes;
         std::cout << std::endl << std::endl;
-    }
-}
-
-void Chameleon::Debug::perftSuite(position &board, const std::vector<std::string>& fenStack) {
-    int counter = 0;
-    for (const std::string &fen : fenStack) {
-        board.setFEN(fen);
-        std::cout << "##### POSITION " << ++counter << " #####" << std::endl << std::endl;
-        display::showPosition(board);
-        std::cout << std::endl << "FEN : " << fen << std::endl << std::endl;
-        perft(board);
     }
 }

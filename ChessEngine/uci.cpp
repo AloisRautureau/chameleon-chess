@@ -157,6 +157,17 @@ namespace Chameleon{
             
             //Those are commands implemented for using Chameleon in a pure CLI environnement, although this is not recommended
             if(command == "show") showPosition(pos);
+            if(command == "perft") Debug::perft(pos);
+            if(command == "divide") Debug::perftDivide(pos);
+            if(command == "showmoves") {
+                movebits stack[256]{0};
+                int index{0};
+                pos.gen(stack, index);
+                std::cout << index << " legal moves : " << std::endl;
+                for(int i = 0; i < index; i++){
+                    std::cout << move_to_str(stack[i]) << std::endl;
+                }
+            }
 
             //Call the function as soon as the previous command has been handled
             uciListen(pos);
@@ -185,7 +196,7 @@ namespace Chameleon{
         void setpos(position &pos, std::vector<std::string> args){
             std::string givenFEN;
             int argindx = 0;
-            if(args[0] == "startpos") givenFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            if(args[argindx++] == "startpos") givenFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
             else {
                 givenFEN += args[0];
                 for(argindx = 1; argindx < args.size() && args[argindx] != "moves"; argindx++){
@@ -195,7 +206,7 @@ namespace Chameleon{
             pos.setFEN(givenFEN);
 
             //Play the moves indicated if any
-            for(int move = argindx; move < args.size(); move++){
+            for(int move = argindx+1; move < args.size(); move++){
                 pos.make(str_to_move(pos, args[move]));
             }
         }
