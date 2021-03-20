@@ -21,7 +21,7 @@ namespace Chameleon{
         movebits bestMove(position &position, int maxdepth = 0, int maxTime = 0, const std::vector<movebits> &moveList = {}, bool infinite = false);
 
         //Searches nodes recursively, called from bestMove. It returns a score
-        int searchNode(position &position, int alpha, int beta, int depthLeft, int nullmoves);
+        int searchNode(position &position, int alpha, int beta, int depthLeft, bool nullAllowed);
 
         //Quiescence ensures that we end up in a position where we're not gonna lose our queen next move,
         //it helps reduce the horizon effect

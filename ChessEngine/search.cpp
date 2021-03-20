@@ -6,6 +6,14 @@
 
 namespace Chameleon{
     namespace Search{
+        unsigned long long nodesSearched{0};
+        unsigned long long nodesOnDepth{0};
+        unsigned long long nodesOnMove{0};
+
+        //Reduction for null move pruning
+        int reduction = 2;
+
+
         movebits bestMove(position &position, int maxdepth, int maxTime, const std::vector<movebits>& moveList, bool infinite){
             //Variables keeping track of the best move found and its score
             //the way it works is that a move currently tested goes into iterationBest if it's score is the best of the current iteration
@@ -52,20 +60,19 @@ namespace Chameleon{
             //We will do that while incrementing the depth to go to (iterative deepening)
             for(int depth = 1; depth < maxdepth; depth++){
                 for(int i = 0; i < mvStackIndx; i++){
+                    nodesOnMove = 0;
                     currentMove = mvStack[i];
                     position.make(currentMove);
-                    currentScore = -searchNode(position, -beta, -alpha, depth - 1, 0);
+                    currentScore = -searchNode(position, -beta, -alpha, depth - 1, false);
                     //The bad side of aspiration windows: to make sure we don't miss stuff, if the score is too far
                     //we need to recalculate, because our window isn't good
                     if(currentScore <= alpha || currentScore >= beta){
                         //Reset alpha and beta
                         alpha -= aspirationWindow;
                         beta += aspirationWindow;
-                        currentScore = -searchNode(position, -beta, -alpha, depth - 1, 0);
+                        currentScore = -searchNode(position, -beta, -alpha, depth - 1, false);
                     }
                     position.takeback();
-
-                    std::cout << "info currmove " << display::displayMove(currentMove) << " currmovenumber " << i << " score cp " << currentScore << std::endl;
 
                     //If the best score is less than what we got, we got ourselvs a new best move!
                     if(currentScore > iterationScore){
@@ -73,29 +80,47 @@ namespace Chameleon{
                         iterationBest = currentMove;
                     }
                     timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-                    if(maxTime && !infinite && timeSpent >= maxTime) break;
+                    //Print out some info about the search for debugging purposes
+                    std::cout
+                            << "info currmove " << display::displayMove(currentMove)
+                            << " currmovenumber " << i
+                            << " score cp " << currentScore/100
+                            << " nodes " << nodesOnMove
+                            << std::endl;
+                    nodesOnDepth += nodesOnMove;
+                    if(maxTime && !infinite && timeSpent >= maxTime) return bestMove;
                 }
                 //Modify alpha and beta
                 alpha = iterationScore - aspirationWindow;
                 beta = iterationScore + aspirationWindow;
 
                 timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-                std::cout << "info depth " << depth << " score cp " << iterationScore/100 << " time " << timeSpent << std::endl;
-                if(maxTime && !infinite && timeSpent >= maxTime) break;
+                std::cout
+                << "info depth " << depth
+                << " score cp " << iterationScore/100
+                << " time " << timeSpent
+                << " nodes " << nodesOnDepth
+                << " nps " << nodesOnDepth/(timeSpent*0.0001)
+                << std::endl;
+                nodesSearched += nodesOnDepth;
+                nodesOnDepth = 0;
+
+                if(maxTime && !infinite && timeSpent >= maxTime) return bestMove;
                 //If we get there, the search has reached an end, so we can keep the move it produced
                 bestMove = iterationBest;
                 bestScore = iterationScore;
+                display::showPosition(position);
             }
 
             return bestMove;
         }
 
-        int searchNode(position &position, int alpha, int beta, int depthLeft, int nullmoves) {
+        int searchNode(position &position, int alpha, int beta, int depthLeft, bool nullAllowed) {
+            nodesOnMove++;
             //We just hit a stop condition
             if(depthLeft <= 0){
                 //Call quiescence to reduce horizon effect
-                return Evaluation::eval(position);
-                //return quiescence(position, alpha, beta, maxTime);
+                return quiescence(position, alpha, beta);
             }
 
             //Generate and store moves
@@ -107,20 +132,10 @@ namespace Chameleon{
             else if(!mvStackIndx) return 0; //Stalemate draw
 
             int score;
-            //If we haven't made 2 null moves already, we can make one
-            if(nullmoves < 2){
-                if(!position.check){
-                    nullmoves++;
-                    position.m_side ^= 1; //Change side only
-                    score = -searchNode(position, -beta, -beta+1, depthLeft - 3, nullmoves);
-                    position.m_side ^= 1;
-                    if(score >= beta) return beta;
-                }
-            }
 
             for(int i = 0; i < mvStackIndx; i++){
                 position.make(mvStack[i]);
-                score = -searchNode(position, -beta, -alpha, depthLeft - 1, nullmoves);
+                score = -searchNode(position, -beta, -alpha, depthLeft - 1, true);
                 position.takeback();
                 if(score >= beta){
                     return beta;
@@ -133,6 +148,7 @@ namespace Chameleon{
         }
 
         int quiescence(position &position, int alpha, int beta) {
+            nodesOnMove++;
             int stand_pat = Evaluation::eval(position);
             if(stand_pat >= beta){
                 return stand_pat;
@@ -152,10 +168,13 @@ namespace Chameleon{
             position.genNoisy(mvStack, mvStackIndx);
 
             //Here, we check if we're in a checkmate or stalemate position
-            if(position.check && !mvStackIndx) return 100000; //Checkmate
-            else if(!mvStackIndx) return 0; //Stalemate draw
+            if(position.check && !mvStackIndx) return -100000; //Checkmate
+            else if(!mvStackIndx) return stand_pat; //The position is already quiet
 
             for(int i = 0; i < mvStackIndx; i++){
+                if(position::getFlag(mvStack[i]) & CAP && Evaluation::see(position, mvStack[i], position.m_side) < 0) {
+                    continue; //No point making the move, it is bad
+                }
                 position.make(mvStack[i]);
                 score = -quiescence(position, -beta, -alpha);
                 position.takeback();

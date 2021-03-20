@@ -6,7 +6,7 @@
 
 position::position() {
     //ZOBRIST KEYS INIT
-    std::mt19937_64 mersenneTwister(time(nullptr));
+    std::mt19937_64 mersenneTwister(random());
     //Loop over every entry in the zobrist key arrays
     for(int side = WHITE; side < BLACK + 1; side++){
         for(int pieceType = PAWN; pieceType < EMPTY; pieceType++){
@@ -41,7 +41,7 @@ position::position() {
 }
 
 void position::gen(movebits stack[], int &stackIndx) {
-    //If we're in check, we muste use the checkEvasion move generator as it is specifically optimized for this
+    //If we're in check, we must use the checkEvasion move generator as it is specifically optimized for this
     if(check){
         checkEvasion(stack, stackIndx);
         return;
@@ -63,7 +63,7 @@ void position::gen(movebits stack[], int &stackIndx) {
                 * - push two squares if they stand on their original rank and no piece is obstructing
                 * - one square diagonnaly forward if an opposite piece sits there
                 */
-                if(m_side == WHITE){
+                if(!m_side){
                     if(m_pieces[adress + N] == EMPTY && (!availableDelta || abs(availableDelta) == abs(N))){
                         if(m_pieces[adress + 2*N] == EMPTY && ranka == 1){ //Double pawn push
                             addToStack(stack, stackIndx, encodeMove(adress, adress + 2*N, DPAWNPUSH));
@@ -225,6 +225,11 @@ void position::gen(movebits stack[], int &stackIndx) {
 }
 
 void position::genNoisy(movebits stack[], int &stackIndx) {
+    if(check){
+        checkEvasion(stack, stackIndx);
+        return;
+    }
+
     //We can use a neat tactic when generating checks, which is :
     //- treating the opposite king as a queen, and generate an array with 4 values:
     //- either the king can go there by moving diagonnaly (1)
@@ -238,6 +243,7 @@ void position::genNoisy(movebits stack[], int &stackIndx) {
     int squareValue;
     int adress;
     int rankp;
+    int pinDelta;
     for(auto stepDirection : m_pieceDelta[QUEEN]){
         if(abs(stepDirection) == 7 || abs(stepDirection) == 9) squareValue = 1;
         else squareValue = 2;
@@ -270,55 +276,109 @@ void position::genNoisy(movebits stack[], int &stackIndx) {
         for(int index = 0; index < m_plist[m_side][piece].size(); index++){
             adress = m_plist[m_side][piece].get(index);
             rankp = rank(adress);
+            pinDelta = isPinned(adress);
             if(piece == PAWN){
-                if(m_pieces[adress + (m_side ? S : N)] == EMPTY){
-                    if(m_pieces[adress + (2*(m_side ? S : N))] == EMPTY && rankp == (m_side ? 6 : 1)){ //Double push is available
-                        if(adress+(2*(m_side ? S : N))+NW == enemyKing || adress+(2*(m_side ? S : N))+NE == enemyKing){
-                            addToStack(stack, stackIndx, encodeMove(adress, adress+(2*(m_side ? S : N)), DPAWNPUSH));
+                if(!m_side){
+                    if(m_color[adress+NW] == !m_side){ //Capture on either side
+                        if(!pinDelta || abs(pinDelta) == abs(NW)) {
+                            if(rankp == 6) {
+                                for(int i = 0; i < 4; i++){
+                                    addToStack(stack, stackIndx, encodeMove(adress, adress+NW, (char)(NPROMCAP+i)));
+                                }
+                            }
+                            else{
+                                addToStack(stack, stackIndx, encodeMove(adress, adress+NW, CAP));
+                            }
                         }
                     }
-                    if(rankp == (m_side ? 1 : 6)){ //That would be a promotion
-                        for(char i = 0; i < 4; i++){
-                            addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? S : N), (char)(NPROM+i)));
+                    if(m_color[adress+NE] == !m_side){
+                        if(!pinDelta || abs(pinDelta) == abs(NE)) {
+                            if(rankp == 6) {
+                                for(int i = 0; i < 4; i++){
+                                    addToStack(stack, stackIndx, encodeMove(adress, adress+NE, (char)(NPROMCAP+i)));
+                                }
+                            }
+                            else{
+                                addToStack(stack, stackIndx, encodeMove(adress, adress+NE, CAP));
+                            }
                         }
                     }
-                    else{
-                        if(adress+(m_side ? S : N)+NW == enemyKing || adress+(m_side ? S : N)+NE == enemyKing){
-                            addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? S : N), QUIET));
+                    if(adress + NW == m_ep){
+                        if(isLegalEp(adress, adress+NW, m_side) && (!pinDelta || abs(pinDelta) == abs(NW))) {
+                            addToStack(stack, stackIndx, encodeMove(adress, adress+NW, EPCAP));
                         }
+                    }
+                    if(adress + NE == m_ep){
+                        if(isLegalEp(adress, adress+NE, m_side) && (!pinDelta || abs(pinDelta) == abs(NE))) {
+                            addToStack(stack, stackIndx, encodeMove(adress, adress+NE, EPCAP));
+                        }
+                    }
+
+                    if(rankp == 1 && (adress + 2*N + NW == enemyKing || adress + 2*N + NE == enemyKing) && (!pinDelta || abs(pinDelta) == abs(N))){
+                        if(m_pieces[adress+N] == EMPTY && m_pieces[adress+2*N]) addToStack(stack, stackIndx, encodeMove(adress, adress + 2*N, DPAWNPUSH));
+                    }
+                    if((adress + N + NW == enemyKing || adress + N + NE == enemyKing) && (!pinDelta || abs(pinDelta) == abs(N)) && m_pieces[adress+N] == EMPTY){
+                        if(rankp == 6){
+                            for(int i = 0; i < 4; i++){
+                                addToStack(stack, stackIndx, encodeMove(adress, adress + N, (char)(NPROM+i)));
+                            }
+                        }
+                        else addToStack(stack, stackIndx, encodeMove(adress, adress + N, QUIET));
                     }
                 }
-                if(((m_color[adress + (m_side ? SW : NW)] == !m_side || adress + (m_side ? SW : NW) == m_ep)) && !(adress+(m_side ? SW : NW) & 0x88)){ //Capture to the north west
-                    if(rankp == (m_side ? 1 : 6)){ //promo capture case
-                        for(char i = 0; i < 4; i++){
-                            addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? SW : NW), (char)(NPROMCAP+i)));
+                else{
+                    if(m_color[adress+SW] == !m_side){ //Capture on either side
+                        if(!pinDelta || abs(pinDelta) == abs(SW)) {
+                            if(rankp == 1) {
+                                for(int i = 0; i < 4; i++){
+                                    addToStack(stack, stackIndx, encodeMove(adress, adress+SW, (char)(NPROMCAP+i)));
+                                }
+                            }
+                            else{
+                                addToStack(stack, stackIndx, encodeMove(adress, adress+SW, CAP));
+                            }
                         }
                     }
-                    else if(adress + (m_side ? SW : NW) == m_ep){
-                        addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? SW : NW), EPCAP));
-                    }
-                    else if(m_color[adress + (m_side ? SW : NW)] == !m_side) {
-                        addToStack(stack, stackIndx, encodeMove(adress, adress + (m_side ? SW : NW), CAP));
-                    }
-                }
-                if(((m_color[adress + (m_side ? SE : NE)] == !m_side || adress + (m_side ? SE : NE) == m_ep)) && !(adress+(m_side ? SE : NE) & 0x88)){ //Capture to the north east
-                    if(rankp == (m_side ? 1 : 6)){ //promo capture case
-                        for(char i = 0; i < 4; i++){
-                            addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? SE : NE), (char)(NPROMCAP+i)));
+                    if(m_color[adress+SE] == !m_side){
+                        if(!pinDelta || abs(pinDelta) == abs(SE)) {
+                            if(rankp == 1) {
+                                for(int i = 0; i < 4; i++){
+                                    addToStack(stack, stackIndx, encodeMove(adress, adress+SE, (char)(NPROMCAP+i)));
+                                }
+                            }
+                            else{
+                                addToStack(stack, stackIndx, encodeMove(adress, adress+SE, CAP));
+                            }
                         }
                     }
-                    else if(adress + (m_side ? SE : NE) == m_ep){
-                        addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? SE : NE), EPCAP));
+                    if(adress + SW == m_ep){
+                        if(isLegalEp(adress, adress+SW, m_side) && (!pinDelta || abs(pinDelta) == abs(SW))) {
+                            addToStack(stack, stackIndx, encodeMove(adress, adress+SW, EPCAP));
+                        }
                     }
-                    else if(m_color[adress + (m_side ? SE : NE)] == !m_side){
-                        addToStack(stack, stackIndx, encodeMove(adress, adress+(m_side ? SE : NE), CAP));
+                    if(adress + SE == m_ep){
+                        if(isLegalEp(adress, adress+SE, m_side) && (!pinDelta || abs(pinDelta) == abs(SE))) {
+                            addToStack(stack, stackIndx, encodeMove(adress, adress+SE, EPCAP));
+                        }
+                    }
+
+                    if(rankp == 6 && (adress + 2*S + SW == enemyKing || adress + 2*S + SE == enemyKing) && (!pinDelta || abs(pinDelta) == abs(S))){
+                        if(m_pieces[adress+S] == EMPTY && m_pieces[adress+2*S] == EMPTY) addToStack(stack, stackIndx, encodeMove(adress, adress + 2*S, DPAWNPUSH));
+                    }
+                    if((adress + S + SW == enemyKing || adress + S + SE == enemyKing) && (!pinDelta || abs(pinDelta) == abs(S)) && m_pieces[adress + S] == EMPTY){
+                        if(rankp == 1){
+                            for(int i = 0; i < 4; i++){
+                                addToStack(stack, stackIndx, encodeMove(adress, adress + S, (char)(NPROM+i)));
+                            }
+                        }
+                        else addToStack(stack, stackIndx, encodeMove(adress, adress + S, QUIET));
                     }
                 }
             }
                 //Next we can deal with sliding piece generation
             else{
                 for(auto stepDirection : m_pieceDelta[piece]){
-                    if(stepDirection == 0) continue;
+                    if(stepDirection == 0 || (pinDelta && abs(stepDirection) != abs(pinDelta))) continue;
                     if(abs(stepDirection) == 7 || abs(stepDirection) == 9) squareValue = 1;
                     else if(piece == KNIGHT) squareValue = 3;
                     else if(piece == KING) squareValue = 4; //King can't check the other king
@@ -375,7 +435,7 @@ void position::checkEvasion(movebits *stack, int &stackIndx) {
                     int attack = m_attackArray[kingSquare - currSquare + 128];
                     switch (m_pieces[currSquare]) {
                         case PAWN:
-                            if(!m_side == WHITE){
+                            if(m_side){
                                 if(currSquare + NW == kingSquare || currSquare + NE == kingSquare){
                                     if(attackerSq == inv) attackerSq = currSquare;
                                     else return;
@@ -451,7 +511,7 @@ void position::checkEvasion(movebits *stack, int &stackIndx) {
                 ranka = rank(adress);
 
                 if(pieceType == PAWN){ //Only pawn captures are of use to us here
-                    if(m_side == WHITE){
+                    if(!m_side){
                         if(!(adress + NW & 0x88) && (adress + NW == attackerSq || (adress + NW == m_ep && attackerSq == m_ep + S))
                         && (!availableDelta || abs(availableDelta) == abs(NW))){
                             if(adress + NW == m_ep && attackerSq == m_ep + S){
@@ -549,7 +609,7 @@ void position::checkEvasion(movebits *stack, int &stackIndx) {
                 ranka = rank(adress);
 
                 if(pieceType == PAWN){ //This time, we're only interested in pushes and ep captures
-                    if(m_side == WHITE){
+                    if(!m_side){
                         if(m_pieces[adress + N] == EMPTY && (!availableDelta || abs(availableDelta) == abs(N))){
                             if(m_pieces[adress + 2*N] == EMPTY && ranka == 1){ //Double pawn push
                                 for(auto i : ray){
@@ -888,7 +948,7 @@ void position::make(movebits move) {
      * Now we actually move pieces
      */
     m_pieces[to] = pieceMoving;
-    m_color[to] = (char)m_side;
+    m_color[to] = m_color[from];
     //Cleanup
     m_pieces[from] = EMPTY;
     m_color[from] = EMPTY;
@@ -1087,6 +1147,8 @@ void position::takeback() {
             m_color[epSquare] = (char)!m_side;
             positionHash ^= piecesKey[!m_side][PAWN][epSquare];
             m_plist[!m_side][PAWN].add(epSquare);
+            m_pieces[to] = EMPTY;
+            m_color[to] = EMPTY;
         }
         else{
             m_pieces[to] = pieceTaken;

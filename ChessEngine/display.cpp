@@ -14,7 +14,7 @@ void display::showPosition(const position &board) {
 
             switch(board.m_pieces[square]){
                 case PAWN:
-                    std::cout << (board.m_color[square] == WHITE ? "|  P  " : "|  p  ");
+                    std::cout << (board.m_color[square] == WHITE ? "|  O  " : "|  +  ");
                     break;
                 case KNIGHT:
                     std::cout << (board.m_color[square] == WHITE ? "|  N  " : "|  n  ");

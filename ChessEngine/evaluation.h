@@ -18,6 +18,7 @@
  */
 
 #include "position.h"
+#include "display.h"
 
 namespace Chameleon {
     namespace Evaluation {
@@ -25,6 +26,10 @@ namespace Chameleon {
 
         //Simply returns the given board's evaluation (positive => sideToMove is winning)
         int eval(position &board);
+
+        //A function that evaluates a capture/move from a pure material perspective, to take a guess at whether or not it might
+        //even be worth playing without actually making any move
+        int see(const position& pos, movebits move, bool side);
     }
 }
 

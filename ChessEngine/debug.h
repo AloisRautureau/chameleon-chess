@@ -18,6 +18,8 @@ namespace Chameleon{
         perftRecursive(int depth, position board);
 
         void perftDivide(position &board, int depth);
+
+        void makeUnmakeSanity(position &board);
     }
 }
 

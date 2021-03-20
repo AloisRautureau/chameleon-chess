@@ -5,3 +5,6 @@
 .gitmodules
 nano.save
 /tools
+/cmake-build-debug
+/cmake-build-release
+/cmake-build-rpi
