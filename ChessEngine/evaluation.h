@@ -4,6 +4,7 @@
 
 #ifndef BAUB_CHESS_EVALUATION_H
 #define BAUB_CHESS_EVALUATION_H
+#pragma once
 
 /*
  * The program will use a simple tappered evaluation function dependant on side to move at first
@@ -19,6 +20,8 @@
 
 #include "position.h"
 #include "display.h"
+class position;
+typedef unsigned short movebits;
 
 namespace Chameleon {
     namespace Evaluation {
@@ -107,7 +110,7 @@ namespace Chameleon {
 
         //A function that evaluates a capture/move from a pure material perspective, to take a guess at whether or not it might
         //even be worth playing without actually making any move
-        int see(const position& pos, movebits move, bool side);
+        static int see(const position& pos, movebits move, bool side);
 
         int getPieceValue(position &pos, char pieceType);
     }

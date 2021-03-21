@@ -41,9 +41,11 @@ namespace Chameleon{
                 position.gen(stack);
             } else { //Otherwise, store them
                 for(auto move : moveList){
-                    position::addToStack(stack, move);
+                    position.addToStack(stack, move);
                 }
             }
+            //If we only have one move, no need to actually search anything
+            if(stack.size == 1) return stack.moves[0];
             position::sortStack(stack);
 
             //If no max depth was given, we assume that the search is meant to not care about depth and set it to be infinite
@@ -85,7 +87,7 @@ namespace Chameleon{
                     std::cout
                             << "info currmove " << display::displayMove(currentMove)
                             << " currmovenumber " << i
-                            << " score cp " << currentScore/100
+                            << " score cp " << currentScore
                             << " nodes " << nodesOnMove
                             << std::endl;
                     nodesOnDepth += nodesOnMove;
@@ -98,7 +100,7 @@ namespace Chameleon{
                 timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
                 std::cout
                 << "info depth " << depth
-                << " score cp " << iterationScore/100
+                << " score cp " << iterationScore
                 << " time " << timeSpent
                 << " nodes " << nodesOnDepth
                 << " nps " << nodesOnDepth/(timeSpent*0.0001)
@@ -120,16 +122,16 @@ namespace Chameleon{
             //We just hit a stop condition
             if(depthLeft <= 0){
                 //Call quiescence to reduce horizon effect
-                return quiescence(position, alpha, beta);
+                return quiescence(position, alpha, beta, 3);
             }
             if(depthLeft == 1){ //We're on a frontier node and can use futility pruning
                 if(Evaluation::eval(position) + Evaluation::m_pieceValue[BISHOP] < alpha){
-                    return quiescence(position, alpha, beta);
+                    return quiescence(position, alpha, beta, 4);
                 }
             }
             if(depthLeft == 2){ //Extended futility pruning, same thing but using a bigger margin
                 if(Evaluation::eval(position) + Evaluation::m_pieceValue[ROOK] < alpha){
-                    return quiescence(position, alpha, beta);
+                    return quiescence(position, alpha, beta, 5);
                 }
             }
             if(depthLeft == 3){ //That's called razoring, we reduce the depth of the search if we're a queen away from alpha
@@ -142,29 +144,37 @@ namespace Chameleon{
             movestack stack;
             position.gen(stack);
             //Here, we check if we're in a checkmate or stalemate position
-            //if(position.check && !stack.size) return -100000; //Checkmate
-            //else if(!stack.size) return 0; //Stalemate draw
+            if(position.check && !stack.size) return -100000; //Checkmate
+            else if(!stack.size) return 0; //Stalemate draw
 
             position::sortStack(stack);
             int score;
+            int b = beta;
 
             for(int i = 0; i < stack.size; i++){
                 position.make(stack.moves[i]);
-                score = -searchNode(position, -beta, -alpha, depthLeft - 1, true);
-                position.takeback();
-                if(score >= beta){
-                    return beta;
+                score = -searchNode(position, -b, -alpha, depthLeft - 1, true);
+                //if the score falls outside the window, we research the move
+                if(score > alpha && score < beta && i > 0){
+                    score = -searchNode(position, -beta, -alpha, depthLeft-1, true);
                 }
+                position.takeback();
+
                 if(score > alpha){
                     alpha = score;
                 }
+                if(alpha >= beta){
+                    return alpha;
+                }
+                b = alpha + 1;
             }
             return alpha;
         }
 
-        int quiescence(position &position, int alpha, int beta) {
+        int quiescence(position &position, int alpha, int beta, int maxDepth) {
             nodesOnMove++;
             int stand_pat = Evaluation::eval(position);
+            if(maxDepth <= -5) return stand_pat;
             if(stand_pat >= beta){
                 return stand_pat;
             }
@@ -182,7 +192,7 @@ namespace Chameleon{
             position.genNoisy(stack);
 
             //Here, we check if we're in a checkmate or stalemate position
-            //if(position.check && !stack.size) return -100000; //Checkmate
+            if(position.check && !stack.size) return -100000; //Checkmate
             if(!stack.size) return stand_pat; //The position is already quiet
             position::sortStack(stack);
 
@@ -190,8 +200,9 @@ namespace Chameleon{
                 if(position::getFlag(stack.moves[i]) & CAP && Evaluation::see(position, stack.moves[i], position.m_side) < 0) {
                     continue; //No point making the move, it is bad
                 }
+                if(maxDepth <= 0 && !(position::getFlag(stack.moves[i]) & CAP)) continue; //We don't need to care about checks after a certain point
                 position.make(stack.moves[i]);
-                score = -quiescence(position, -beta, -alpha);
+                score = -quiescence(position, -beta, -alpha, maxDepth-1);
                 position.takeback();
 
                 //Then it's just normal alpha beta stuff
@@ -224,5 +235,167 @@ namespace Chameleon{
             return moveTime;
         }
 
+    }
+}
+
+namespace Chameleon{
+    namespace Evaluation{
+        static int see(const position &pos, movebits move, bool side) {
+            //We first need to find every potential attackers to the square, making sure they aren't pinned !
+            pieceList wAttackers{{}};
+            pieceList bAttackers{{}};
+            int scores[32];
+            int scoreIndex = 0;
+            int from = position::fromSq(move);
+            int to = position::toSq(move);
+            int attackerDelta = 0;
+
+            //Check for the bishop deltas
+            for (auto delta : m_pieceDelta[BISHOP]) {
+                if (!delta) break;
+                //While we check for diagonnaly attacking pieces, might as well take care of pawns/kings
+                if (pos.m_pieces[to + delta] == PAWN || pos.m_pieces[to + delta] == KING) {
+                    if (to + delta == from) {
+                        attackerDelta = delta;
+                        continue;
+                    }
+                    if (pos.m_color[to + delta] == WHITE) wAttackers.add(to + delta);
+                    else bAttackers.add(to + delta);
+                    continue;
+                }
+
+                for (int currSquare = to + delta; !(currSquare & 0x88); currSquare += delta) {
+                    if (pos.m_pieces[currSquare] == BISHOP || pos.m_pieces[currSquare] == QUEEN) {
+                        if (currSquare == from) {
+                            attackerDelta = delta;
+                            break;
+                        }
+                        if (pos.m_color[currSquare] == WHITE) wAttackers.add(currSquare);
+                        else bAttackers.add(currSquare);
+                        break;
+                    } else if (pos.m_pieces[currSquare] != EMPTY) break;
+                }
+            }
+
+            //Same thing for rook
+            for (auto delta : m_pieceDelta[ROOK]) {
+                if (!delta) break;
+                //Here we just need to check for king moves
+                if (pos.m_pieces[to + delta] == KING) {
+                    if (to + delta == from) {
+                        attackerDelta = delta;
+                        continue; //We don't add the original attacker to the plist
+                    }
+                    if (pos.m_color[to + delta] == WHITE) wAttackers.add(to + delta);
+                    else bAttackers.add(to + delta);
+                    continue;
+                }
+
+                for (int currSquare = to + delta; !(currSquare & 0x88); currSquare += delta) {
+                    if (pos.m_pieces[currSquare] == ROOK || pos.m_pieces[currSquare] == QUEEN) {
+                        if (currSquare == from) {
+                            attackerDelta = delta;
+                            break;
+                        }
+                        if (pos.m_color[currSquare] == WHITE) wAttackers.add(currSquare);
+                        else bAttackers.add(currSquare);
+                        break;
+                    } else if (pos.m_pieces[currSquare] != EMPTY) break;
+                }
+            }
+
+
+            //Finally, same for knights
+            for (auto delta : m_pieceDelta[KNIGHT]) {
+                if (!delta) break;
+                if (pos.m_pieces[to + delta] == KNIGHT) {
+                    if (to + delta == from) {
+                        attackerDelta = delta;
+                        break;
+                    }
+                    if (pos.m_color[to + delta] == WHITE) wAttackers.add(to + delta);
+                    else bAttackers.add(to + delta);
+                }
+            }
+
+            //Now we've got every direct attacker, we can simulate the initial capture
+            int capturedValue = m_pieceValue[pos.m_pieces[to]];
+            int attackerValue = m_pieceValue[pos.m_pieces[from]];
+            scores[scoreIndex++] = capturedValue;
+            side ^= 1;
+
+            char attacker = pos.m_pieces[from];
+            int attackerSquare = from;
+            //We'll repeat this for every attacker
+            do {
+                //The attacker is now the captures piece
+                capturedValue = attackerValue;
+
+                //We now add hidden attackers after the first move, those can be found by following the attackerDelta from the from square
+                if (pos.m_pieces[attacker] != KNIGHT && pos.m_pieces[attacker] != KING && scoreIndex < 32) {
+                    for (int currSquare = from + attackerDelta; !(currSquare & 0x88); currSquare += attackerDelta) {
+                        if (pos.m_pieces[currSquare] != EMPTY) {
+                            //Check if the piece found can use the delta
+                            int attack = pos.m_attackArray[to - currSquare + 128];
+                            switch (pos.m_pieces[currSquare]) {
+                                case BISHOP:
+                                    if (attack == position::attKQBbP || attack == position::attKQBwP ||
+                                        attack == position::attQB) {
+                                        if (pos.m_color[currSquare] == WHITE) wAttackers.add(currSquare);
+                                        else bAttackers.add(currSquare);
+                                    }
+                                    break;
+                                case ROOK:
+                                    if (attack == position::attKQR || attack == position::attQR) {
+                                        if (pos.m_color[currSquare] == WHITE) wAttackers.add(currSquare);
+                                        else bAttackers.add(currSquare);
+                                    }
+                                    break;
+                                case QUEEN:
+                                    if (attack != position::attNONE && attack != position::attN) {
+                                        if (pos.m_color[currSquare] == WHITE) wAttackers.add(currSquare);
+                                        else bAttackers.add(currSquare);
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (bAttackers.size() < 1 || wAttackers.size() < 1) break;
+
+                //Now, we find the least valuable attacking piece, and make it capture the square
+                int size = side ? bAttackers.size() : wAttackers.size();
+                for (int i = 0; i < size; i++) {
+                    if (i == 0 ||
+                        m_pieceValue[pos.m_pieces[side ? bAttackers.get(i) : wAttackers.get(i)]] < attackerValue) {
+                        attackerSquare = side ? bAttackers.get(i) : wAttackers.get(i);
+                        attacker = pos.m_pieces[attackerSquare];
+                        attackerValue = m_pieceValue[attacker];
+                    }
+                }
+
+                // We should remove the attacker since it won't be attacking anymore
+                if (!side && wAttackers.size() > 0) wAttackers.remove(attackerSquare);
+                else if(bAttackers.size() > 0) bAttackers.remove(attackerSquare);
+
+                //And update the score
+                scores[scoreIndex] = capturedValue - scores[scoreIndex - 1];
+                scoreIndex++;
+                side ^= 1;
+            } while (bAttackers.size() > 0 && wAttackers.size() > 0);
+
+            //Now evaluate the whole sequence
+            while (scoreIndex > 1) {
+                scoreIndex--;
+                if (scores[scoreIndex - 1] > -scores[scoreIndex]) {
+                    scores[scoreIndex - 1] = -scores[scoreIndex];
+                }
+            }
+
+            return scores[0];
+        }
     }
 }

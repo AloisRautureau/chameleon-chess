@@ -25,7 +25,7 @@ namespace Chameleon{
 
         //Quiescence ensures that we end up in a position where we're not gonna lose our queen next move,
         //it helps reduce the horizon effect
-        int quiescence(position &position, int alpha, int beta);
+        int quiescence(position &position, int alpha, int beta, int maxDepth);
 
         //This function returns the time to allocate to a search given the time left and increment for side to move
         int manageTime(position &position);

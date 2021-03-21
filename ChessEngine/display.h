@@ -4,8 +4,11 @@
 
 #ifndef BAUB_CHESS_DISPLAY_H
 #define BAUB_CHESS_DISPLAY_H
-
+#pragma once
 #include "position.h"
+class position;
+typedef unsigned short movebits;
+
 
 static const char pieceRepresentations[2][6] = {
         {'P', 'N', 'B', 'R', 'Q', 'K'},

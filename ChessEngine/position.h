@@ -5,10 +5,14 @@
 #ifndef BAUB_CHESS_BOARD_REPRESENTATION_H
 #define BAUB_CHESS_BOARD_REPRESENTATION_H
 
+#pragma once
 #include <iostream>
 #include <stack>
 #include <vector>
 #include <random>
+#include "evaluation.h"
+
+typedef unsigned short movebits;
 
 /*
  * This class is the representation of a board state.
@@ -23,7 +27,6 @@
     *  6 -11       to
     *  12-15      flags
     */
-typedef unsigned short movebits;
 
 static const char PAWN = 0;
 static const char KNIGHT = 1;
@@ -289,9 +292,9 @@ public:
     bool isLegalEp(int from, int to, bool side);
 
     //Adds a move to the stack after checking whether or not it was legal
-    static void addToStack(movestack &stack, movebits move);
+    void addToStack(movestack &stack, movebits move) const;
     //Simply sorts the stack so that "good" moves go first
-    static void sortStack(movestack & stack);
+    static void sortStack(movestack &stack);
 
     //Checks if the given square is under attack by the given side
     bool inCheck(bool side);
@@ -320,8 +323,6 @@ public:
 
     //Sets up the current board position to match the given FEN notation
     void setFEN(std::string fen);
-
-    void showPosition();
 };
 
 
