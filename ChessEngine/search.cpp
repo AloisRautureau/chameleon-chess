@@ -6,10 +6,6 @@
 
 namespace Chameleon{
     namespace Search{
-        unsigned long long nodesSearched{0};
-        unsigned long long nodesOnDepth{0};
-        unsigned long long nodesOnMove{0};
-
         //Reduction for null move pruning
         int reduction = 2;
 
@@ -63,7 +59,6 @@ namespace Chameleon{
             for(int depth = 1; depth < maxdepth; depth++){
                 iterationScore = -99999;
                 for(int i = 0; i < stack.size; i++){
-                    nodesOnMove = 0;
                     currentMove = stack.moves[i];
                     position.make(currentMove);
                     currentScore = -searchNode(position, -beta, -alpha, depth - 1, false);
@@ -88,9 +83,7 @@ namespace Chameleon{
                             << "info currmove " << display::displayMove(currentMove)
                             << " currmovenumber " << i
                             << " score cp " << currentScore
-                            << " nodes " << nodesOnMove
                             << std::endl;
-                    nodesOnDepth += nodesOnMove;
                     if(maxTime && !infinite && timeSpent >= maxTime) return bestMove;
                 }
                 //Modify alpha and beta
@@ -102,12 +95,7 @@ namespace Chameleon{
                 << "info depth " << depth
                 << " score cp " << iterationScore
                 << " time " << timeSpent
-                << " nodes " << nodesOnDepth
-                << " nps " << nodesOnDepth/(timeSpent*0.0001)
                 << std::endl;
-                nodesSearched += nodesOnDepth;
-                nodesOnDepth = 0;
-
                 if(maxTime && !infinite && timeSpent >= maxTime) return bestMove;
                 //If we get there, the search has reached an end, so we can keep the move it produced
                 bestMove = iterationBest;
@@ -118,7 +106,6 @@ namespace Chameleon{
         }
 
         int searchNode(position &position, int alpha, int beta, int depthLeft, bool nullAllowed) {
-            nodesOnMove++;
             //We just hit a stop condition
             if(depthLeft <= 0){
                 //Call quiescence to reduce horizon effect
@@ -172,7 +159,6 @@ namespace Chameleon{
         }
 
         int quiescence(position &position, int alpha, int beta, int maxDepth) {
-            nodesOnMove++;
             int stand_pat = Evaluation::eval(position);
             if(maxDepth <= -5) return stand_pat;
             if(stand_pat >= beta){
