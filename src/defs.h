@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <stack>
 
 namespace Chameleon{
     /*
@@ -15,40 +16,33 @@ namespace Chameleon{
         */
 
     //Let's us access arrays indexed by piece type/color easily
-    static const int Wh = 0;
-    static const int Bl = 1;
-
-    static const int P = 0;
-    static const int N = 1;
-    static const int B = 2;
-    static const int R = 3;
-    static const int Q = 4;
-    static const int K = 5;
+    static const int W = 0;
+    static const int B = 1;
 
     //Piece encoding (we or color value and piece type to get the full piece encoding)
     typedef uint8_t piece;
-    static const piece EMPTY = 0;
-    static const piece WHITE = 0b00000001;
-    static const piece BLACK = 0b00000010;
+    static const piece EMPTY = 7;
+    static const piece WHITE = 0b01000;
+    static const piece BLACK = 0b10000;
 
-    static const piece PAWN = 0b00000100;
-    static const piece KNIGHT = 0b00001000;
-    static const piece BISHOP = 0b00010000;
-    static const piece ROOK = 0b00100000;
-    static const piece QUEEN = 0b01000000;
-    static const piece KING = 0b10000000;
-    static const piece PTMASK = 0b11111100;
+    static const piece PAWN = 0b0000;
+    static const piece KNIGHT = 0b0001;
+    static const piece BISHOP = 0b0010;
+    static const piece ROOK = 0b0011;
+    static const piece QUEEN = 0b0100;
+    static const piece KING = 0b0101;
+    static const piece PTMASK = 0b0111;
 
     //Definition of initial chessboard position
     static piece initialPosition[0x88] = {
-            ROOK|WHITE, KNIGHT|WHITE, BISHOP|WHITE, QUEEN|WHITE, KING|WHITE, ROOK|WHITE, KNIGHT|WHITE, BISHOP|WHITE, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+            ROOK|WHITE, KNIGHT|WHITE, BISHOP|WHITE, QUEEN|WHITE, KING|WHITE, BISHOP|WHITE, KNIGHT|WHITE, ROOK|WHITE, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
             PAWN|WHITE, PAWN|WHITE, PAWN|WHITE, PAWN|WHITE, PAWN|WHITE, PAWN|WHITE, PAWN|WHITE, PAWN|WHITE, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
             EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
             EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
             EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
             EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
             PAWN|BLACK, PAWN|BLACK, PAWN|BLACK, PAWN|BLACK, PAWN|BLACK, PAWN|BLACK, PAWN|BLACK, PAWN|BLACK, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
-            ROOK|BLACK, KNIGHT|BLACK, BISHOP|BLACK, QUEEN|BLACK, KING|BLACK, ROOK|BLACK, KNIGHT|BLACK, BISHOP|BLACK, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+            ROOK|BLACK, KNIGHT|BLACK, BISHOP|BLACK, QUEEN|BLACK, KING|BLACK, BISHOP|BLACK, KNIGHT|BLACK, ROOK|BLACK, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
     };
 
     //Coordinate transformation in 0x88 little-endian setup
@@ -110,7 +104,7 @@ namespace Chameleon{
     //Definition of movebyte type, which will encode moves in 16 bits
     typedef uint16_t movebyte;
 
-    enum flag {
+    enum flags {
         QUIET,
         DPAWNPUSH,
         KCASTLE,
@@ -171,16 +165,16 @@ namespace Chameleon{
                 0x21, 0x12, -0x21, -0x12, 0x1F, 0x0E, -0x1F, -0x0E
             },
             { //Bishops
-                0x09, 0x11, -0x09, -0x11, 0, 0, 0, 0
+                0x0F, 0x11, -0x0F, -0x11, 0, 0, 0, 0
             },
             { //Rooks
                 0x10, -0x10, 1, -1, 0, 0, 0, 0
             },
             { //Queen
-                0x10, -0x10, 1, -1, 0x09, 0x11, -0x09, -0x11,
+                0x10, -0x10, 1, -1, 0x0F, 0x11, -0x0F, -0x11,
             },
             { //King
-                0x10, -0x10, 1, -1, 0x09, 0x11, -0x09, -0x11,
+                0x10, -0x10, 1, -1, 0x0F, 0x11, -0x0F, -0x11,
             },
     };
 
@@ -219,7 +213,7 @@ namespace Chameleon{
              0,0,0,-17,0,0,0,0,-16,0,0,0,0,-15,0,0,0,0,0,0,     //40-59
              -17,0,0,0,-16,0,0,0,-15,0,0,0,0,0,0,0,0,-17,0,0,     //60-79
              -16,0,0,-15,0,0,0,0,0,0,0,0,0,0,-17,-33,-16,-31,-15,0,     //80-99
-             0,0,0,0,0,0,0,0,0,0,-14,-15,-16,-17,-18,0,0,0,0,0,     //100-119
+             0,0,0,0,0,0,0,0,0,0,-18,-17,-16,-15,-14,0,0,0,0,0,     //100-119
              0,-1,-1,-1,-1,-1,-1,-1,0,1,1,1,1,1,1,1,0,0,0,0,     //120-139
              0,0,14,15,16,17,18,0,0,0,0,0,0,0,0,0,0,0,15,31,     //140-159
              16,33,17,0,0,0,0,0,0,0,0,0,0,15,0,0,16,0,0,17,     //160-179
@@ -228,27 +222,28 @@ namespace Chameleon{
              0,0,0,0,16,0,0,0,0,0,17,0,0,15,0,0,0,0,0,0,     //220-239
              16,0,0,0,0,0,0,17,0,0,0,0,0,0,0,0,0         }; //240-256
 
-    static int get_attackingdelta(int attacked, int attacking, int pieceType, int side) {
+    static int get_attackingdelta(int attacked, int attacking, piece pieceType) {
         int attack = ATTACK_ARRAY[attacked - attacking + 128];
+        int side = pieceType&0b10000;
         //We first check if the attack is even possible
         if(attack == ATTACK_NONE) return 0;
-        switch(pieceType){
-            case P:
+        switch(pieceType&PTMASK){
+            case PAWN:
                 if((!side && attack != ATTACK_KQBwP) || (side && attack != ATTACK_KQBbP)) return 0;
                 break;
-            case B:
+            case BISHOP:
                 if(attack != ATTACK_QB && attack != ATTACK_KQBwP && attack != ATTACK_KQBbP) return 0;
                 break;
-            case N:
+            case KNIGHT:
                 if(attack != ATTACK_N) return 0;
                 break;
-            case R:
+            case ROOK:
                 if(attack != ATTACK_KQR && attack != ATTACK_QR) return 0;
                 break;
-            case Q:
+            case QUEEN:
                 if(attack == ATTACK_N) return 0;
                 break;
-            case K:
+            case KING:
                 if(attack != ATTACK_KQR && attack != ATTACK_KQBbP && attack != ATTACK_KQBwP) return 0;
                 break;
             default: break;
@@ -264,22 +259,39 @@ namespace Chameleon{
      * as well as the pinning delta
      */
     struct pins {
-        int squares[32]{0};
         int deltas[32]{0};
-        int index_board[0x88]{-1};
+        int index_board[0x88];
         int size{0};
     };
 
+    static void initPin(pins &pin){
+        for(int & i : pin.index_board){
+            i = -1;
+        }
+    }
+
     static void addPin(pins &pin, int square, int delta) {
-        pin.squares[pin.size] = square;
         pin.deltas[pin.size] = delta;
         pin.index_board[square] = pin.size;
         pin.size++;
     }
 
     static int getPinDelta(pins &pin, int square) {
-        return pin.index_board[square] == -1 ? 0 : pin.index_board[square];
+        return pin.index_board[square] == -1 ? 0 : pin.deltas[pin.index_board[square]];
     }
+
+    /*
+     * GAME HISTORY CONTAINER
+     */
+    struct history_entry {
+        movebyte move;
+        int ep;
+        int castling;
+        int fifty;
+        int captured;
+        pins pinned;
+        bool checked;
+    };
 }
 
 

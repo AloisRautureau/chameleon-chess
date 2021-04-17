@@ -8,7 +8,9 @@ int main() {
 
     position test = position();
     movestack stack;
-    test.gen(stack);
+    test.perft(6);
+    test.perft(7);
+
 
     return 0;
 }
