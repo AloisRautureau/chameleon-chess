@@ -468,7 +468,95 @@ namespace Chameleon {
     }
 
     void position::setFEN(std::string fen) {
+        std::string ranks[8]; //Holds the string describing each of the ranks
+        int rank_size{0};
+        std::string options[5]; //Same but with the options
+        int options_size{0};
 
+        //Iterate one time over the string to split it correctly
+        std::string swap;
+        for(char c : fen){
+            if(c == '/') {ranks[rank_size++] = swap; swap = "";}
+            else if(c == ' ') {
+                if(rank_size < 8) {ranks[rank_size++] = swap; swap = "";}
+                else {options[options_size++] = swap; swap = "";}
+            }
+            else swap += c;
+        }
+        options[options_size++] = swap;
+
+        //We can then check every rank, setting the board according to the string
+        int file{0};
+        int square;
+        for(int rank = 0; rank < rank_size; rank++){
+            file = 0;
+            for(int i = 0; i < ranks[rank].length(); i++){
+                square = getSquare(7-rank, file);
+                switch(tolower(ranks[rank][i])){
+                    case 'p':
+                        m_board[square] = PAWN | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        file++;
+                        break;
+
+                    case 'n':
+                        m_board[square] = KNIGHT | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        file++;
+                        break;
+
+                    case 'b':
+                        m_board[square] = BISHOP | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        file++;
+                        break;
+
+                    case 'r':
+                        m_board[square] = ROOK | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        file++;
+                        break;
+
+                    case 'q':
+                        m_board[square] = QUEEN | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        file++;
+                        break;
+
+                    case 'k':
+                        m_board[square] = KING | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        file++;
+                        break;
+
+                    default:
+                        for(int j = 0; j < ranks[rank][i] - '0'; j++){
+                            square = getSquare(7-rank, file);
+                            m_board[square] = EMPTY;
+                            file++;
+                        }
+                        break;
+                }
+            }
+        }
+
+        if(options_size > 0) m_side = (options[0] == "b");
+        else m_side = W;
+
+        if(options_size > 1) {
+            m_castling = 0;
+            for(auto c : options[1]){
+                switch(c){
+                    case 'K': m_castling |= 0b1000; break;
+                    case 'Q': m_castling |= 0b0100; break;
+                    case 'k': m_castling |= 0b0010; break;
+                    case 'q': m_castling |= 0b0001; break;
+                    default: break;
+                }
+            }
+        } else m_castling = 0b1111;
+
+        if(options_size > 2){
+            if(options[2] == "-") m_ep = 0x88;
+            else m_ep = getSquare(options[2][1]-1, options[2][0] - 'a');
+        }
+
+        if(options_size > 3) m_fifty = stoi(options[3]);
+        if(options_size > 4) m_ply = stoi(options[4]);
     }
 
     void position::perft(int depth) {
@@ -504,5 +592,48 @@ namespace Chameleon {
             unmake();
         }
         return nodes;
+    }
+
+    void position::show() {
+        int square;
+        std::cout << "- - - - - - - - - - - -\n- - - - - - - - - - - -" << std::endl;
+        for(int rank = 7; rank >= 0; rank--){
+            std::cout << "- - ";
+            for(int file = 0; file < 8; file++){
+                square = getSquare(rank, file);
+                switch (m_board[square]&PTMASK) {
+                    case PAWN:
+                        std::cout << (m_board[square]&WHITE ? "P " : "p ");
+                        break;
+                    case KNIGHT:
+                        std::cout << (m_board[square]&WHITE ? "N " : "n ");
+                        break;
+                    case BISHOP:
+                        std::cout << (m_board[square]&WHITE ? "B " : "b ");
+                        break;
+                    case ROOK:
+                        std::cout << (m_board[square]&WHITE ? "R " : "r ");
+                        break;
+                    case QUEEN:
+                        std::cout << (m_board[square]&WHITE ? "Q " : "q ");
+                        break;
+                    case KING:
+                        std::cout << (m_board[square]&WHITE ? "K " : "k ");
+                        break;
+                    default:
+                        std::cout << (". ");
+                        break;
+                }
+            }
+            std::cout << "- -" << std::endl;
+        }
+        std::cout << "- - - - - - - - - - - -\n- - - - - - - - - - - -" << std::endl;
+
+        std::cout << "ply: " << m_ply << "     " << (m_side ? "black's move'" : "white's move") << std::endl;
+        std::cout << "cast: " << (m_castling & 0b1000 ? "K" : "")
+                                  << (m_castling & 0b0100 ? "Q" : "")
+                                  << (m_castling & 0b0010 ? "k" : "")
+                                  << (m_castling & 0b0001 ? "q" : "");
+        std::cout << "     ep: " << (m_ep == 0x88 ? "-" : std::string({(char)(getFile(m_ep)-'a'), (char)((getRank(m_ep)+1)-'0')}));
     }
 }

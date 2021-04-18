@@ -77,6 +77,9 @@ namespace Chameleon {
             //correct move generators
             void perft(int depth);
             uint64_t perftRecursive(int depth);
+
+            //Display method
+            void show();
         };
 }
 #endif //CHAMELEON_POSITION_H
