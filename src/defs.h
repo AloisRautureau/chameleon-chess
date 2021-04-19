@@ -64,12 +64,15 @@ namespace Chameleon{
     }
 
     struct plist {
-        int indexes[32]{0x88};
+        int indexes[32]{0};
         int size{0};
-        int indexesBoard[0x88]{0x88};
+        int indexesBoard[0x88]{0};
     };
 
-    static void init_plist(plist &list, const std::vector<int>& squares) {
+    static void init_plist(plist &list, const std::vector<int>& squares = {}) {
+        for(int & i : list.indexesBoard){
+            i = -1;
+        }
         for(auto square : squares) {
             list.indexesBoard[square] = list.size;
             list.indexes[list.size] = square;
@@ -79,6 +82,7 @@ namespace Chameleon{
 
     static void plist_update(plist &list, int from, int to) {
         int index = list.indexesBoard[from];
+        list.indexesBoard[from] = -1;
         list.indexesBoard[to] = index;
         list.indexes[index] = to;
     }
@@ -121,16 +125,39 @@ namespace Chameleon{
         QPROMCAP,
     };
 
+    //Lookup tables for 0x88 to 8x8 conversion
+    static const int sq8x8[0x88] = {
+            0, 1, 2, 3, 4, 5, 6, 7, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+            8, 9, 10, 11, 12, 13, 14, 15, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+            16, 17, 18, 19, 20, 21, 22, 23, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+            24, 25, 26, 27, 28, 29, 30, 31, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+            32, 33, 34, 35, 36, 37, 38, 39, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+            40, 41, 42, 43, 44, 45, 46, 47, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+            48, 49, 50, 51, 52, 53, 54, 55, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+            56, 57, 58, 59, 60, 61, 62, 63, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88,
+    };
+
+    static const int sq0x88[64] = {
+            0, 1, 2, 3, 4, 5, 6, 7,
+            16, 17, 18, 19, 20, 21, 22, 23,
+            32, 33, 34, 35, 36, 37, 38, 39,
+            48, 49, 50, 51, 52, 53, 54, 55,
+            64, 65, 66, 67, 68, 69, 70, 71,
+            80, 81, 82, 83, 84, 85, 86, 87,
+            96, 97, 98, 99, 100, 101, 102, 103,
+            112, 113, 114, 115, 116, 117, 118, 119,
+    };
+
     static movebyte encode(int from, int to, int flag){
-        return (((from + (from & 7)) >> 1) << 10) + (((to + (to & 7)) >> 1) << 4) + flag;
+        return (sq8x8[from] << 10) + (sq8x8[to] << 4) + flag;
     }
 
     static int fromSq(movebyte move) {
-        return ((move & 0b1111110000000000) >> 10) + (((move & 0b1111110000000000) >> 10) & ~7);
+        return sq0x88[((move & 0b1111110000000000) >> 10)];
     }
 
     static int toSq(movebyte move) {
-        return ((move & 0b1111110000) >> 4) + (((move & 0b1111110000) >> 4) & ~7);
+        return sq0x88[((move & 0b1111110000) >> 4)];
     }
 
     static int flag(movebyte move) {
@@ -260,7 +287,7 @@ namespace Chameleon{
      */
     struct pins {
         int deltas[32]{0};
-        int index_board[0x88];
+        int index_board[0x88]{0};
         int size{0};
     };
 
@@ -284,14 +311,21 @@ namespace Chameleon{
      * GAME HISTORY CONTAINER
      */
     struct history_entry {
-        movebyte move;
-        int ep;
-        int castling;
-        int fifty;
-        int captured;
-        pins pinned;
-        bool checked;
+        movebyte move{0};
+        int ep{0};
+        int castling{0};
+        int fifty{0};
+        int captured{0};
+        pins pinned{0};
+        bool checked{false};
     };
+
+    /*
+     * DISPLAY COMMON INFO
+     */
+    static std::string intToSq(int square){
+        return std::string({(char)(getFile(square) + 'a'), (char)(getRank(square) + '1')});
+    }
 }
 
 

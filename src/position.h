@@ -22,7 +22,6 @@ namespace Chameleon {
             bool m_checked = false; //Set to true if king checked
 
             pins m_pinned; //Pinned pieces
-            pins m_pinning; //Pinning pieces
 
             std::stack<history_entry> m_history; //Keeps the moves made during the game, with additionnal info for unmake
 
@@ -71,7 +70,7 @@ namespace Chameleon {
             bool epGotcha(int epSquare, int captured);
 
             //Sets the board state to the given FEN string
-            void setFEN(std::string fen);
+            void setFEN(const std::string& fen);
 
             //Used to debug the position class, by making and unmaking all possible moves and comparing the results to
             //correct move generators

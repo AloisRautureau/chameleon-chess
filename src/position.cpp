@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <bitset>
 #include "position.h"
 
 namespace Chameleon {
@@ -75,16 +76,18 @@ namespace Chameleon {
                                 storeMove(from, from + 0x11, NPROMCAP, stack); //Capture promotion
                             else storeMove(from, from + 0x11, CAP, stack);
                         }
-                        else if (from + 0x11 == m_ep && !(pinDelta%0x11) && !epGotcha(from, from+1) && m_capture[from + 0x11])
+                        else if (from + 0x11 == m_ep && !(pinDelta%0x11) && !epGotcha(from, from+1) && (m_capture[from + 0x01] || m_push[from + 0x11])){
                             storeMove(from, from + 0x11, EPCAP, stack);
+                        }
 
                         if (m_board[from + 0x0F] & BLACK && !(pinDelta%0x0F) && m_capture[from + 0x0F]) {
                             if (from >= 0x60 && from <= 0x67)
                                 storeMove(from, from + 0x0F, NPROMCAP, stack); //Capture promotion
                             else storeMove(from, from + 0x0F, CAP, stack);
                         }
-                        else if (from + 0x0F == m_ep && !(pinDelta%0x0F) && !epGotcha(from, from-1) && m_capture[from + 0x0F])
+                        else if (from + 0x0F == m_ep && !(pinDelta%0x0F) && !epGotcha(from, from-1) && (m_capture[from - 0x01] || m_push[from + 0x0F])){
                             storeMove(from, from + 0x0F, EPCAP, stack);
+                        }
                     }
                     else {
                         if (m_board[from - 0x10] == EMPTY && !(pinDelta%0x10)) {
@@ -103,16 +106,18 @@ namespace Chameleon {
                                 storeMove(from, from - 0x11, NPROMCAP, stack); //Capture promotion
                             else storeMove(from, from - 0x11, CAP, stack);
                         }
-                        else if (from - 0x11 == m_ep && !(pinDelta%0x11) && !epGotcha(from, from-1) && m_capture[from - 0x11])
+                        else if (from - 0x11 == m_ep && !(pinDelta%0x11) && !epGotcha(from, from-1) && (m_capture[from - 0x01] || m_push[from - 0x11])){
                             storeMove(from, from - 0x11, EPCAP, stack);
+                        }
 
                         if (m_board[from - 0x0F] & WHITE && !(pinDelta%0x0F) && m_capture[from - 0x0F]) {
                             if (from >= 0x10 && from <= 0x17)
                                 storeMove(from, from - 0x0F, NPROMCAP, stack); //Capture promotion
                             else storeMove(from, from - 0x0F, CAP, stack);
                         }
-                        else if (from - 0x0F == m_ep && !(pinDelta%0x0F) && !epGotcha(from, from+1) && m_capture[from - 0x0F])
+                        else if (from - 0x0F == m_ep && !(pinDelta%0x0F) && !epGotcha(from, from+1) && (m_capture[from + 0x01] || m_push[from - 0x0F])){
                             storeMove(from, from - 0x0F, EPCAP, stack);
+                        }
                     }
                 }
                 else {
@@ -123,13 +128,14 @@ namespace Chameleon {
                     // - it can't slide
                     for(auto delta : piece_delta[piece_type]){
                         if(!delta) break;
-                        if(pinDelta%delta) continue;
+                        if(pinDelta%delta || (abs(delta) == 1 && pinDelta && abs(pinDelta) != abs(delta))) continue;
+
                         raySq = from;
                         for(;;){
                             raySq += delta;
                             if(isInvalid(raySq) || m_board[raySq] & (m_side ? BLACK : WHITE)) break;
-                            if(m_board[raySq] & (m_side ? WHITE : BLACK) && m_capture[raySq]) { //Current square is occupied by opposing piece
-                                storeMove(from, raySq, CAP, stack);
+                            if(m_board[raySq] & (m_side ? WHITE : BLACK)) { //Current square is occupied by opposing piece
+                                if(m_capture[raySq]) storeMove(from, raySq, CAP, stack);
                                 break;
                             }
                             else if(m_push[raySq]) storeMove(from, raySq, QUIET, stack);
@@ -146,7 +152,7 @@ namespace Chameleon {
         for(auto delta : piece_delta[KING]){
             raySq = from + delta;
             if(!isInvalid(raySq) && !(m_board[raySq] & (m_side ? BLACK : WHITE)) && !isAttacked(raySq, true)) {
-                if(m_board[raySq]) storeMove(from, raySq, QUIET, stack);
+                if(m_board[raySq] == EMPTY) storeMove(from, raySq, QUIET, stack);
                 else storeMove(from, raySq, CAP, stack);
             }
         }
@@ -157,12 +163,12 @@ namespace Chameleon {
         // - King not in check (but this generator shouldn't be called if the king is in check anyway)
         // - No squares between king from and to are attacked by the opponent
         if(!m_side && !m_checked){
-            if(m_castling&0b1000 && !m_board[0x05] && !m_board[0x06] && !isAttacked(0x05) && !isAttacked(0x06)) storeMove(0x04, 0x06, KCASTLE, stack);
-            if(m_castling&0b0100 && !m_board[0x03] && !m_board[0x02] && !m_board[0x01] && !isAttacked(0x03) && !isAttacked(0x02)) storeMove(0x04, 0x02, QCASTLE, stack);
+            if(m_castling&0b1000 && m_board[0x05] == EMPTY && m_board[0x06] == EMPTY && !isAttacked(0x05) && !isAttacked(0x06)) storeMove(0x04, 0x06, KCASTLE, stack);
+            if(m_castling&0b0100 && m_board[0x03] == EMPTY && m_board[0x02] == EMPTY && m_board[0x01] == EMPTY && !isAttacked(0x03) && !isAttacked(0x02)) storeMove(0x04, 0x02, QCASTLE, stack);
         }
         else if(m_side && !m_checked){
-            if(m_castling&0b0010 && !m_board[0x75] && !m_board[0x76] && !isAttacked(0x75) && !isAttacked(0x76)) storeMove(0x74, 0x76, KCASTLE, stack);
-            if(m_castling&0b0001 && !m_board[0x73] && !m_board[0x72] && !m_board[0x71]&& !isAttacked(0x73) && !isAttacked(0x72)) storeMove(0x74, 0x72, QCASTLE, stack);
+            if(m_castling&0b0010 && m_board[0x75] == EMPTY && m_board[0x76] == EMPTY && !isAttacked(0x75) && !isAttacked(0x76)) storeMove(0x74, 0x76, KCASTLE, stack);
+            if(m_castling&0b0001 && m_board[0x73] == EMPTY && m_board[0x72] == EMPTY && m_board[0x71] == EMPTY && !isAttacked(0x73) && !isAttacked(0x72)) storeMove(0x74, 0x72, QCASTLE, stack);
         }
 
         /*
@@ -193,6 +199,7 @@ namespace Chameleon {
                 m_push[i] = false;
                 m_capture[i] = false;
             }
+
             m_capture[attackers[0]] = true;
             //Follow the ray towards the king to create the push mask
             raySq = attackers[0];
@@ -240,12 +247,14 @@ namespace Chameleon {
                 m_castling &= (m_side ? 0b1100 : 0b0011);
                 m_board[(m_side ? 0x75 : 0x05)] = m_board[(m_side ? 0x77 : 0x07)];
                 m_board[(m_side ? 0x77 : 0x07)] = EMPTY;
+                plist_update(m_plists[m_side][ROOK], (m_side ? 0x77 : 0x07), (m_side ? 0x75 : 0x05));
                 break;
 
             case QCASTLE: //Move the rook, update castling rights
                 m_castling &= (m_side ? 0b1100 : 0b0011);
                 m_board[(m_side ? 0x73 : 0x03)] = m_board[(m_side ? 0x70 : 0x00)];
                 m_board[(m_side ? 0x70 : 0x00)] = EMPTY;
+                plist_update(m_plists[m_side][ROOK], (m_side ? 0x70 : 0x00), (m_side ? 0x73 : 0x03));
                 break;
 
             case CAP: //Remove the piece that has been captured from the piece list
@@ -264,21 +273,24 @@ namespace Chameleon {
 
         //Next we deal with promoting pawns if necessary, by setting the to square to the piece type of our color
         if(fl&NPROM){
-            m_board[to] = (m_side ? BLACK : WHITE) | (fl&0b11 + 1);
+            m_board[to] = (m_side ? BLACK : WHITE) | ((fl&0b0011) + 1);
             plist_remove(m_plists[m_side][PAWN], to);
-            plist_add(m_plists[m_side][fl&0b11 + 1], to);
-            if(fl&CAP) m_fifty = 0;
+            plist_add(m_plists[m_side][(fl&0b11) + 1], to);
+            if(fl&CAP) {
+                plist_remove(m_plists[!m_side][captured&PTMASK], to);
+                m_fifty = 0;
+            }
         }
 
         //If a rook or a king has been moved, update the castling rights accordingly
-        if(moved == KING) m_castling &= (m_side ? 0b1100 : 0b0011);
-        if(moved == ROOK) {
-            if(from == (m_side ? 0x70 : 0x00)) m_castling &= (m_side ? 0b1101 : 0b0111);
-            if(from == (m_side ? 0x77 : 0x07)) m_castling &= (m_side ? 0b0001 : 0b1011);
+        if((moved&PTMASK) == KING) m_castling &= (m_side ? 0b1100 : 0b0011);
+        if((moved&PTMASK) == ROOK) {
+            if(from == (m_side ? 0x70 : 0x00)) m_castling &= (m_side ? 0b1110 : 0b1011);
+            if(from == (m_side ? 0x77 : 0x07)) m_castling &= (m_side ? 0b1101 : 0b0111);
         }
-        if(captured == ROOK) {
-            if(to == (m_side ? 0x00 : 0x70)) m_castling &= (m_side ? 0b0111 : 0b1101);
-            if(to == (m_side ? 0x07 : 0x77)) m_castling &= (m_side ? 0b1011 : 0b0001);
+        if((captured&PTMASK) == ROOK) {
+            if(to == (m_side ? 0x00 : 0x70)) m_castling &= (m_side ? 0b1011 : 0b1110);
+            if(to == (m_side ? 0x07 : 0x77)) m_castling &= (m_side ? 0b0111 : 0b1101);
         }
 
         //Finally, we can change side and check our pins/if we're checked
@@ -306,6 +318,17 @@ namespace Chameleon {
         piece moved = m_board[to];
         piece captured = hist.captured;
 
+        //First we unpromote any pawn if necessary
+        if(fl&NPROM){
+            plist_add(m_plists[m_side][PAWN], to);
+            plist_remove(m_plists[m_side][moved&PTMASK], to);
+            m_board[to] = (m_side ? BLACK : WHITE) | (PAWN);
+            moved = m_board[to];
+            if(fl&CAP){
+                fl = CAP;
+            }
+        }
+
         //We started by moving the piece back to its original position
         plist_update(m_plists[m_side][moved&PTMASK], to, from);
         m_board[to] = EMPTY;
@@ -316,11 +339,13 @@ namespace Chameleon {
             case KCASTLE: //Move the rook
                 m_board[(m_side ? 0x77 : 0x07)] = m_board[(m_side ? 0x75 : 0x05)];
                 m_board[(m_side ? 0x75 : 0x05)] = EMPTY;
+                plist_update(m_plists[m_side][ROOK], (m_side ? 0x75 : 0x05), (m_side ? 0x77 : 0x07));
                 break;
 
             case QCASTLE: //Move the rook
                 m_board[(m_side ? 0x70 : 0x00)] = m_board[(m_side ? 0x73 : 0x03)];
                 m_board[(m_side ? 0x73 : 0x03)] = EMPTY;
+                plist_update(m_plists[m_side][ROOK],  (m_side ? 0x73 : 0x03), (m_side ? 0x70 : 0x00));
                 break;
 
             case CAP: //Read the piece that had been captured from the piece list
@@ -335,17 +360,6 @@ namespace Chameleon {
 
             default: break;
         }
-
-        //Next we deal with unpromoting pawns if necessary
-        if(fl&NPROM){
-            m_board[from] = (m_side ? BLACK : WHITE) | (fl&0b11 + 1);
-            plist_add(m_plists[m_side][PAWN], from);
-            plist_remove(m_plists[m_side][fl&0b11 + 1], from);
-            if(fl&CAP){
-                plist_add(m_plists[!m_side][captured&PTMASK], to);
-            }
-        }
-
         m_history.pop();
         m_doublechecked = false;
     }
@@ -388,19 +402,23 @@ namespace Chameleon {
         for(int piece_type = PAWN; piece_type <= KING; piece_type++){
             for(int i = 0; i < m_plists[!m_side][piece_type].size; i++){
                 attacking = m_plists[!m_side][piece_type].indexes[i];
-                delta = get_attackingdelta(square, attacking, piece_type);
+                delta = get_attackingdelta(square, attacking, m_board[attacking]);
                 if(delta){ //If we found an attacking delta, follow it (if knight, king or pawn, stop after one iteration)
                     if(piece_delta[0][piece_type]) { //Sliding piece
                         raySq = attacking;
                         for(;;){
                             raySq += delta;
-                            if(raySq == square) attackers.push_back(attacking); deltas.push_back(delta);
+                            if(raySq == square) {
+                                attackers.push_back(attacking); deltas.push_back(delta);
+                            }
                             if(isInvalid(raySq) || m_board[raySq] != EMPTY) {
                                 break;
                             }
                         }
                     }
-                    else if(attacking + delta == square) attackers.push_back(attacking); deltas.push_back(delta);
+                    else if(attacking + delta == square) {
+                        attackers.push_back(attacking); deltas.push_back(delta);
+                    }
                 }
             }
         }
@@ -411,7 +429,7 @@ namespace Chameleon {
         int delta;
         int raySq;
         int king = m_plists[m_side][KING].indexes[0]; //Get our king's square
-        int pinnedSq = 0;
+        int pinnedSq;
         pins pinned; initPin(pinned);
         //The idea is to find every opponent piece that can get to the king, then follow their rays
         //We xray to the first piece found if it is one of our pieces, but stop if we encounter a second one
@@ -420,7 +438,7 @@ namespace Chameleon {
                 attacker = m_plists[!m_side][piece_type].indexes[i];
                 delta = get_attackingdelta(king, attacker, piece_type);
                 if(!delta) continue;
-                pinnedSq = 0;
+                pinnedSq = 0x88;
                 //In case we're dealing with a sliding piece, follow the ray stopping at second friendly piece found
                 //or any enemy piece
                 if(piece_delta[0][piece_type]) {
@@ -433,7 +451,7 @@ namespace Chameleon {
                         }
                         if(m_board[raySq] != EMPTY){
                             if(m_board[raySq] & (m_side ? BLACK : WHITE)){ //Friendly piece on square
-                                if(!pinnedSq) pinnedSq = raySq;
+                                if(pinnedSq == 0x88) pinnedSq = raySq;
                                 else break;
                             }
                             else break; //Not friendly pieces
@@ -456,18 +474,24 @@ namespace Chameleon {
             raySq = king;
             for(;;){
                 raySq += delta;
-                if(isInvalid(raySq) || (m_board[raySq] & (m_side ? BLACK : WHITE) && raySq != epSquare && raySq != captured)){
-                    break;
-                }
-                if(m_board[raySq] & (m_side ? WHITE : BLACK)){
-                    if((m_board[raySq]&PTMASK) == QUEEN || (m_board[raySq]&PTMASK) == ROOK) return true;
+                if(isInvalid(raySq)) break;
+                if(m_board[raySq] != EMPTY && raySq != captured && raySq != epSquare){
+                    if(m_board[raySq] == (QUEEN|(m_side ? WHITE : BLACK)) || m_board[raySq] == (ROOK|(m_side ? WHITE : BLACK))) return true;
+                    else break;
                 }
             }
         }
         return false;
     }
 
-    void position::setFEN(std::string fen) {
+    void position::setFEN(const std::string& fen) {
+        plist pieces[2][6];
+        for(auto & piece : pieces){
+            for(auto & j : piece){
+                init_plist(j);
+            }
+        }
+
         std::string ranks[8]; //Holds the string describing each of the ranks
         int rank_size{0};
         std::string options[5]; //Same but with the options
@@ -486,7 +510,7 @@ namespace Chameleon {
         options[options_size++] = swap;
 
         //We can then check every rank, setting the board according to the string
-        int file{0};
+        int file;
         int square;
         for(int rank = 0; rank < rank_size; rank++){
             file = 0;
@@ -495,31 +519,37 @@ namespace Chameleon {
                 switch(tolower(ranks[rank][i])){
                     case 'p':
                         m_board[square] = PAWN | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        plist_add(pieces[(islower(ranks[rank][i]) ? 1 : 0)][PAWN], square);
                         file++;
                         break;
 
                     case 'n':
                         m_board[square] = KNIGHT | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        plist_add(pieces[(islower(ranks[rank][i]) ? 1 : 0)][KNIGHT], square);
                         file++;
                         break;
 
                     case 'b':
                         m_board[square] = BISHOP | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        plist_add(pieces[(islower(ranks[rank][i]) ? 1 : 0)][BISHOP], square);
                         file++;
                         break;
 
                     case 'r':
                         m_board[square] = ROOK | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        plist_add(pieces[(islower(ranks[rank][i]) ? 1 : 0)][ROOK], square);
                         file++;
                         break;
 
                     case 'q':
                         m_board[square] = QUEEN | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        plist_add(pieces[(islower(ranks[rank][i]) ? 1 : 0)][QUEEN], square);
                         file++;
                         break;
 
                     case 'k':
                         m_board[square] = KING | (islower(ranks[rank][i]) ? BLACK : WHITE);
+                        plist_add(pieces[(islower(ranks[rank][i]) ? 1 : 0)][KING], square);
                         file++;
                         break;
 
@@ -552,11 +582,21 @@ namespace Chameleon {
 
         if(options_size > 2){
             if(options[2] == "-") m_ep = 0x88;
-            else m_ep = getSquare(options[2][1]-1, options[2][0] - 'a');
+            else m_ep = getSquare(options[2][1] - '1', options[2][0] - 'a');
         }
 
         if(options_size > 3) m_fifty = stoi(options[3]);
         if(options_size > 4) m_ply = stoi(options[4]);
+
+        for(int i = 0; i < 2; i++){
+            for(int j = 0; j < 6; j++){
+                m_plists[i][j] = pieces[i][j];
+            }
+        }
+
+        updatePins();
+        m_checked = isAttacked(m_plists[m_side][KING].indexes[0]);
+        m_doublechecked = false;
     }
 
     void position::perft(int depth) {
@@ -566,15 +606,15 @@ namespace Chameleon {
         uint64_t total{0};
 
         for(int i = 0; i < stack.size; i++) {
-            std::cout << std::hex << fromSq(stack.moves[i]) << "->" << toSq(stack.moves[i]) << std::dec << " : ";
+            std::cout << intToSq(fromSq(stack.moves[i])) << intToSq(toSq(stack.moves[i])) <<  " :  ";
             make(stack.moves[i]);
-            nodes = perftRecursive(depth-1);
+            nodes = depth == 1 ? 1 : perftRecursive(depth-1);
             std::cout << nodes << std::endl;
             total += nodes;
             unmake();
         }
 
-        std::cout << std::endl << "Total : " << total << std::endl;
+        std::cout << std::endl << "depth " << depth << " : " << total << std::endl;
     }
 
     uint64_t position::perftRecursive(int depth){
@@ -582,7 +622,7 @@ namespace Chameleon {
         uint64_t nodes = 0;
 
         gen(stack);
-        if(depth <= 1) {
+        if(depth == 1) {
             return stack.size;
         }
 
@@ -629,11 +669,11 @@ namespace Chameleon {
         }
         std::cout << "- - - - - - - - - - - -\n- - - - - - - - - - - -" << std::endl;
 
-        std::cout << "ply: " << m_ply << "     " << (m_side ? "black's move'" : "white's move") << std::endl;
-        std::cout << "cast: " << (m_castling & 0b1000 ? "K" : "")
-                                  << (m_castling & 0b0100 ? "Q" : "")
-                                  << (m_castling & 0b0010 ? "k" : "")
-                                  << (m_castling & 0b0001 ? "q" : "");
-        std::cout << "     ep: " << (m_ep == 0x88 ? "-" : std::string({(char)(getFile(m_ep)-'a'), (char)((getRank(m_ep)+1)-'0')}));
+        std::cout << "ply: " << m_ply << "     " << (m_side ? "black's move" : "white's move") << std::endl;
+        std::cout << "cast: " << (m_castling & 0b1000 ? "K" : ".")
+                                  << (m_castling & 0b0100 ? "Q" : ".")
+                                  << (m_castling & 0b0010 ? "k" : ".")
+                                  << (m_castling & 0b0001 ? "q" : ".");
+        std::cout << "     ep: " << (m_ep == 0x88 ? "-" : intToSq(m_ep)) << std::endl << std::endl;
     }
 }
