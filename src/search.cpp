@@ -73,6 +73,9 @@ namespace Search {
             beta = best_score - aspiration_window;
         }
 
+        //Send some info back to the user
+        std::cout << "bestmove " << moveToString(best) << std::endl;
+
         //We searched everything, now we can just return the best move found
         return best;
     }

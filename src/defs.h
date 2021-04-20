@@ -374,6 +374,39 @@ namespace Chameleon{
         return std::string({(char)(getFile(square) + 'a'), (char)(getRank(square) + '1')});
     }
 
+    static std::string moveToString(movebyte move) {
+        std::string written = intToSq(fromSq(move)) + intToSq(toSq(move));
+        switch (flag(move)) {
+            case NPROM:
+            case NPROMCAP:
+                written += "n";
+                break;
+            case BPROM:
+            case BPROMCAP:
+                written += "b";
+                break;
+            case RPROM:
+            case RPROMCAP:
+                written += "r";
+                break;
+            case QPROM:
+            case QPROMCAP:
+                written += "q";
+                break;
+            default:
+                break;
+        }
+
+        return written;
+    }
+
+    static movebyte stringToMove(const movestack stack, const std::string &move){
+        for(int i = 0; i < stack.size; i++) {
+            if(moveToString(stack.moves[i]) == move) return stack.moves[i];
+        }
+        return 0;
+    }
+
     /*
      * EVALUATION CONSTANTS
      */
