@@ -539,6 +539,12 @@ namespace Chameleon{
                     -53, -34, -21, -11, -28, -14, -24, -43
             }
     };
+
+    /*
+     * SEARCH CONSTANTS
+     */
+    static const int INFINITY = 999999;
+    static const int MATE_SCORE = 999999;
 }
 
 

@@ -33,7 +33,7 @@ namespace Chameleon {
         initPin(m_pinned);
     }
 
-    void position::gen(movestack &stack) {
+    void position::gen(movestack &stack, bool noisy) {
         //Reset the stack
         stack.size = 0;
 
@@ -62,7 +62,7 @@ namespace Chameleon {
                     //Pawns can only move up for white, down for black, capture diagonally, and promote
                     //We deal with each of those in two branches, one for each color, to keep things clean
                     if (!m_side) {
-                        if (m_board[from + 0x10] == EMPTY && !(pinDelta%0x10)) {
+                        if (!noisy && m_board[from + 0x10] == EMPTY && !(pinDelta%0x10)) {
                             if (from >= 0x60 && from <= 0x67 && m_push[from + 0x10])
                                 storeMove(encode(from, from + 0x10, NPROM), stack); //Quiet promotion
                             else {
@@ -92,7 +92,7 @@ namespace Chameleon {
                         }
                     }
                     else {
-                        if (m_board[from - 0x10] == EMPTY && !(pinDelta%0x10)) {
+                        if (!noisy && m_board[from - 0x10] == EMPTY && !(pinDelta%0x10)) {
                             if (from >= 0x10 && from <= 0x17 && m_push[from - 0x10])
                                 storeMove(encode(from, from - 0x10, NPROM), stack); //Quiet promotion
                             else {
@@ -140,7 +140,7 @@ namespace Chameleon {
                                 if(m_capture[raySq]) storeMove(encode(from, raySq, CAP), stack);
                                 break;
                             }
-                            else if(m_push[raySq]) storeMove(encode(from, raySq, QUIET), stack);
+                            else if(!noisy && m_push[raySq]) storeMove(encode(from, raySq, QUIET), stack);
                             if(!piece_delta[0][piece_type]) break;
                         }
                     }
@@ -154,7 +154,9 @@ namespace Chameleon {
         for(auto delta : piece_delta[KING]){
             raySq = from + delta;
             if(!isInvalid(raySq) && !(m_board[raySq] & (m_side ? BLACK : WHITE)) && !isAttacked(raySq, true)) {
-                if(m_board[raySq] == EMPTY) storeMove(encode(from, raySq, QUIET), stack);
+                if(m_board[raySq] == EMPTY) {
+                    if(!noisy) storeMove(encode(from, raySq, QUIET), stack);
+                }
                 else storeMove(encode(from, raySq, CAP), stack);
             }
         }
@@ -164,11 +166,11 @@ namespace Chameleon {
         // - Castling rights allow it (king and rook haven't been moved
         // - King not in check (but this generator shouldn't be called if the king is in check anyway)
         // - No squares between king from and to are attacked by the opponent
-        if(!m_side && !m_checked){
+        if(!noisy && !m_side && !m_checked){
             if(m_castling&0b1000 && m_board[0x05] == EMPTY && m_board[0x06] == EMPTY && !isAttacked(0x05) && !isAttacked(0x06)) storeMove(encode(0x04, 0x06, KCASTLE), stack);
             if(m_castling&0b0100 && m_board[0x03] == EMPTY && m_board[0x02] == EMPTY && m_board[0x01] == EMPTY && !isAttacked(0x03) && !isAttacked(0x02)) storeMove(encode(0x04, 0x02, QCASTLE), stack);
         }
-        else if(m_side && !m_checked){
+        else if(!noisy && m_side && !m_checked){
             if(m_castling&0b0010 && m_board[0x75] == EMPTY && m_board[0x76] == EMPTY && !isAttacked(0x75) && !isAttacked(0x76)) storeMove(encode(0x74, 0x76, KCASTLE), stack);
             if(m_castling&0b0001 && m_board[0x73] == EMPTY && m_board[0x72] == EMPTY && m_board[0x71] == EMPTY && !isAttacked(0x73) && !isAttacked(0x72)) storeMove(encode(0x74, 0x72, QCASTLE), stack);
         }
@@ -179,10 +181,6 @@ namespace Chameleon {
             std::cout << std::hex << fromSq(stack.moves[i]) << " " << toSq(stack.moves[i]) << std::dec << std::endl;
         }
          */
-    }
-
-    void position::genNoisy(movestack &stack) {
-
     }
 
     void position::genEvasionMasks() {

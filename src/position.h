@@ -39,10 +39,7 @@ namespace Chameleon {
             * GENERATORS
             */
             //Generates all legal moves for the given position
-            void gen(movestack &stack);
-
-            //Generates non quiet moves (captures, promotions, checks)
-            void genNoisy(movestack &stack);
+            void gen(movestack &stack, bool noisy = false);
 
             /*
             * MAKE/UNMAKE

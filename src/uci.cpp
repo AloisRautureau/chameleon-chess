@@ -64,20 +64,24 @@ namespace UCI {
     void go(position &pos, const std::vector<std::string>& args) {
         movestack searchmoves;
         bool ponder{false};
-        int wtime{0};
-        int btime{0};
+        int wtime{9999999};
+        int btime{9999999};
         int winc{0};
         int binc{0};
-        int depth{0};
+        int depth{99};
         int movetime{0};
         bool infinite{false};
 
         for(int i = 0; i < args.size(); i++) {
             if(args.at(i) == "depth") depth = std::stoi(args.at(++i));
-            else if(args.at(i) == "movetime") movetime = std::stoi(args.at(++i));
+            else if(args.at(i) == "movetime") movetime = (std::stoi(args.at(++i)))*1000;
+            else if(args.at(i) == "winc") winc = (std::stoi(args.at(++i)));
+            else if(args.at(i) == "binc") binc = (std::stoi(args.at(++i)));
+            else if(args.at(i) == "wtime") wtime = (std::stoi(args.at(++i)));
+            else if(args.at(i) == "btime") btime = (std::stoi(args.at(++i)));
         }
 
-        Search::search_root(pos, depth, movetime);
+        Search::search_root(pos, depth, movetime, (pos.m_side ? btime : wtime), (pos.m_side ? binc : winc));
     }
 
     void setPosition(position &pos, const std::vector<std::string>& args) {
@@ -86,7 +90,7 @@ namespace UCI {
         int i = 1;
 
         if(args.at(0) == "startpos"){
-            pos.setFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - - 0 1");
+            pos.setFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         } else {
             //We'll first need to reconstruct the fen string, as it gets chopped up in the process of separating command
             // and arguments. We fuse the arguments until we hit a move
@@ -98,7 +102,7 @@ namespace UCI {
             pos.setFEN(swap);
         }
 
-
+        i++;
         for(i; i < args.size(); i++){
             pos.gen(stack);
             pos.make(stringToMove(stack, args.at(i)));

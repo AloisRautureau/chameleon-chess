@@ -6,9 +6,10 @@
 #include "search.h"
 
 using namespace Chameleon;
+using namespace std::chrono;
 
 namespace Search {
-    movebyte search_root(position &pos, int maxdepth, int movetime){
+    movebyte search_root(position &pos, int maxdepth, int movetime, int timeleft, int increment, bool infinite){
         movebyte best{0};
         int score = -99999;
         int best_score = -99999;
@@ -25,10 +26,24 @@ namespace Search {
         int bad_alpha{0};
         int bad_beta{0};
 
+        //Get going with time constraints
+        if(!movetime && !infinite) movetime = timeboy(timeleft, increment);
+        else if (infinite) movetime = 99999999;
+        auto start_time = high_resolution_clock::now();
+        auto current_time = high_resolution_clock::now();
+        bool depth_complete{false};
+
+
         //The actual search
         int depth = 1;
-        for(depth; depth < maxdepth; depth++) {
+        for(depth; depth <= maxdepth; depth++) {
+            current_time = high_resolution_clock::now();
+            if(duration_cast<milliseconds>(current_time - start_time).count() > movetime) break;
             for(int i = 0; i < stack.size; i++) {
+                //Check if we've got time left before checking every move
+                current_time = high_resolution_clock::now();
+                if(duration_cast<milliseconds>(current_time - start_time).count() > movetime) break;
+
                 pos.make(stack.moves[i]);
                 score = -search_node(pos, depth - 1, -beta, -alpha);
                 if (score <= alpha) { //Cases where we evaluate outside of the window
@@ -81,11 +96,17 @@ namespace Search {
     }
 
     int search_node(position &pos, int depth, int alpha, int beta) {
-        //When reaching the max depth, return eval (TODO : return quiescence search result)
-        if(depth == 0) return Eval::eval(pos);
+        //When reaching the max depth, return an evaluation
+        if(depth == 0) return quiescence(pos, alpha, beta);
 
         movestack stack;
         pos.gen(stack);
+
+        //If the movestack is empty, we're in a checkmate or stalemate
+        if(!stack.size){
+            if(pos.m_checked) return -MATE_SCORE;
+            else return 0;
+        }
 
         int score;
         for(int i = 0; i < stack.size; i++) {
@@ -97,5 +118,33 @@ namespace Search {
             if(score > alpha) alpha = score;
         }
         return alpha;
+    }
+
+    int quiescence(position &pos, int alpha, int beta) {
+        int stand_pat = Eval::eval(pos); //Return a first evaluation
+        if(stand_pat >= beta) return beta;
+        if(stand_pat < alpha - 900) return alpha; //Delta pruning
+        if(stand_pat > alpha) alpha = stand_pat;
+
+        movestack stack;
+        pos.gen(stack, true); //Generate all noisy moves
+
+        for(int i = 0; i < stack.size; i++) {
+            //TODO : check SEE for every move, if the move has SEE < 0, do not consider it at all
+            pos.make(stack.moves[i]);
+            stand_pat = -quiescence(pos, -beta, -alpha);
+            pos.unmake();
+
+            if(stand_pat >= beta) return beta;
+            if(stand_pat > alpha) alpha = stand_pat;
+        }
+        return alpha;
+    }
+
+    int timeboy(int timeleft, int increment) {
+        //As a starting point, we'll allow 20% of remaining time to search, plus any increment
+        int time = 0;
+        time += (int)(timeleft/50) + increment;
+        return time;
     }
 }
