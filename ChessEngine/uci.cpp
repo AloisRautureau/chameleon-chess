@@ -206,6 +206,7 @@ namespace Chameleon{
 
             //Play the moves indicated if any
             for(int move = argindx+1; move < args.size(); move++){
+                std::cout << str_to_move(pos, args[move]) << std::endl;
                 pos.make(str_to_move(pos, args[move]));
             }
         }
