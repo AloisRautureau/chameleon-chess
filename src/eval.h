@@ -18,10 +18,7 @@ namespace Eval {
      * Auxilizary functions that help break down different evaluation aspects
      */
     //Simple piece-value evaluation for each side
-    int materialEval(position &pos);
-
-    //Positionnal bonus for pieces based on a piece square table
-    int pc_sqEval(position &pos, bool endgame);
+    int materialEval(position &pos, bool endgame);
 
     //Evaluates the pawn structure
     int structureEval(position &pos);
